@@ -1,0 +1,100 @@
+system_power: 系统功率
+power_flow: 功率流
+on_battery: 使用电池
+power_usage: 电量使用情况
+temperature: 温度
+temperature_desc: 当前电池温度
+battery_health: 电池健康
+battery_health_desc: 当前电池健康状态
+cycle_count: 循环次数
+cycle_count_desc: 总循环次数
+energy: 能量
+designed_capacity: 设计容量
+times: 次
+status:
+  charging_power: 充电功率
+  offline: 离线
+  on_battery: 电池供电
+  system_power: 系统功率
+  to_full: 充满
+  to_empty: 耗尽
+  fully_charged: 已充满
+  battery_in: 电池输入
+  power_loss: 损耗
+  screen_power: 屏幕
+  heatpipe_power: SoC
+  system_total: 整机
+  system_other: 其他
+flow:
+  screen_power: 屏幕功耗
+  heatpipe_power: SoC功耗
+  system_total: 系统总功耗
+  system_in: 系统总输入
+  battery_in: 电池充电功率
+  battery_out: 电池放电功率
+  power_loss: 损耗
+  adapter_power: 适配器功率
+settings:
+  appearance: 外观
+  theme: 主题
+  theme_desc: 更改应用程序的主题
+  theme_light: 浅色
+  theme_dark: 深色
+  theme_system: 跟随系统
+  language: 语言
+  language_desc: 设置应用程序的语言
+  auto: 自动
+  animations: 动画
+  animations_desc: 显示功率变化的平滑过渡效果
+  update_and_monitoring: 更新与监控
+  update_frequency: 更新频率
+  update_frequency_desc: 电力数据刷新频率
+  background_monitoring: 后台监控
+  background_monitoring_desc: 在后台运行应用程序
+  status_bar: 状态栏
+  status_bar_desc: 状态栏中显示的信息类型
+  heatpipe_power: SoC功率
+  screen_power: 屏幕功率
+  system_total: 系统总功率
+  show_charging_power: 显示充电功率
+  show_charging_power_desc: 在充电时显示充电功率而非系统功率
+  about: 关于
+  build: 构建
+  license: 许可证
+  author: 作者
+  version: 版本
+
+time:
+  minute: 分钟
+  hour: 小时
+
+time_ago_options:
+  day_future: 现在|明天|{n} 天后
+  day_past: 现在|昨天|{n} 天前
+  hour_future: 现在|1 小时后|{n} 小时后
+  hour_past: 现在|1 小时前|{n} 小时前
+  just_now: 刚刚
+  minute_future: 现在|1 分钟后|{n} 分钟后
+  minute_past: 现在|1 分钟前|{n} 分钟前
+  month_future: 现在|下个月|{n} 个月后
+  month_past: 现在|上个月|{n} 个月前
+  second_future: 刚刚|{n} 秒后|{n} 秒后
+  second_past: 刚刚|{n} 秒前|{n} 秒前
+  short_day_future: '{n} 天前'
+  short_day_past: '{n} 天前'
+  short_hour_future: '{n} 小时前'
+  short_hour_past: '{n} 小时前'
+  short_minute_future: '{n} 分钟前'
+  short_minute_past: '{n} 分钟前'
+  short_month_future: '{n} 个月前'
+  short_month_past: '{n} 个月前'
+  short_second_future: '{n} 秒前'
+  short_second_past: '{n} 秒前'
+  short_week_future: '{n} 周前'
+  short_week_past: '{n} 周前'
+  short_year_future: '{n} 年前'
+  short_year_past: '{n} 年前'
+  week_future: 现在|下周|{n} 周后
+  week_past: 现在|上周|{n} 周前
+  year_future: 现在|明年|{n} 年后
+  year_past: 现在|去年|{n} 年前

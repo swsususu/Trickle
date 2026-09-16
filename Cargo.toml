@@ -1,0 +1,14 @@
+[workspace]
+members = [
+  "src-tauri",
+  "crates/*"
+]
+resolver = "2"
+
+[workspace.dependencies]
+tpower = { path = "crates/tpower" }
+
+[workspace.lints.clippy]
+pedantic = "warn"
+nursery = "warn"
+cargo = "warn"
