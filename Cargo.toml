@@ -12,3 +12,13 @@ tpower = { path = "crates/tpower" }
 pedantic = "warn"
 nursery = "warn"
 cargo = "warn"
+
+# Cargo enables `strip = "debuginfo"` for release by default (since 1.77).
+# On macOS with a deployment target >= 12.0 (chained fixups), rustc then emits
+# dylibs whose LC_SYMTAB string pool is not 8-byte aligned, and dyld on
+# macOS 27 refuses to dlopen them. This breaks proc-macro crates such as
+# sqlx-macros during release builds. See rust-lang/rust#157750.
+# build-override covers build scripts, proc macros, and their dependencies,
+# so the shipped binary is still stripped.
+[profile.release.build-override]
+strip = false
