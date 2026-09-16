@@ -284,6 +284,12 @@ fn is_charging_local(io: &IORegistry, smc: &SMCPowerData) -> bool {
     if io.amperage != 0 {
         return io.amperage > 0;
     }
+    // Amperage is zero. When IOKit says the pack is full, it is full: on
+    // macOS 27 SMC `CHCC` keeps reporting 1.0 while sitting on the adapter
+    // at 100%, which would otherwise show a permanent "charging" state.
+    if io.fully_charged {
+        return false;
+    }
     // Fall back to IOKit flag, then SMC only if IOKit is silent.
     io.is_charging || smc.is_charging()
 }
@@ -402,6 +408,43 @@ mod tests {
             ..Default::default()
         };
         assert!(!is_charging_local(&io, &smc));
+    }
+
+    #[test]
+    fn fully_charged_on_adapter_is_not_charging() {
+        // macOS 27 on a 100% battery sitting on the adapter: amperage is 0,
+        // IOKit reports IsCharging=No / FullyCharged=Yes, but SMC CHCC is
+        // still 1.0. Trusting CHCC here shows a permanent "charging" state.
+        let io = IORegistry {
+            instant_amperage: 0,
+            amperage: 0,
+            fully_charged: true,
+            is_charging: false,
+            ..Default::default()
+        };
+        let smc = SMCPowerData {
+            charging_status: 1.0,
+            ..Default::default()
+        };
+        assert!(!is_charging_local(&io, &smc));
+    }
+
+    #[test]
+    fn smc_flag_still_used_when_iokit_is_silent() {
+        // Not full, no amperage reading yet, IOKit flag unset: SMC is the
+        // only signal left and should still be honoured.
+        let io = IORegistry {
+            instant_amperage: 0,
+            amperage: 0,
+            fully_charged: false,
+            is_charging: false,
+            ..Default::default()
+        };
+        let smc = SMCPowerData {
+            charging_status: 1.0,
+            ..Default::default()
+        };
+        assert!(is_charging_local(&io, &smc));
     }
 
     #[test]
