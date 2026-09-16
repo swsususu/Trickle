@@ -295,7 +295,7 @@ function SettingsSection(props: SettingsSectionProps) {
           {{ commitHash.slice(0, 7) }}
           <a
             class="ml-2 mr-1 text-xs text-muted-foreground underline flex items-center gap-1 cursor-pointer"
-            @click="open(`https://github.com/lzt1008/powerflow/commit/${commitHash}`)"
+            @click="open(`https://github.com/swsususu/Trickle/commit/${commitHash}`)"
           >
             View on GitHub
             <ExternalLink class="size-3 text-muted-foreground" />

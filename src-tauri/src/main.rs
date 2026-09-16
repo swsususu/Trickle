@@ -3,5 +3,5 @@
 
 #[tokio::main]
 async fn main() {
-    powerflow_lib::run();
+    trickle_lib::run();
 }

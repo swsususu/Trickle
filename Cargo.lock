@@ -3674,43 +3674,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "powerflow"
-version = "0.2.2"
-dependencies = [
- "bincode",
- "chrono",
- "cocoa 0.26.0",
- "derive_more 1.0.0",
- "log",
- "objc",
- "objc2",
- "objc2-app-kit",
- "objc2-foundation",
- "scopefn",
- "serde",
- "serde_json",
- "specta",
- "specta-typescript",
- "sqlx",
- "strum",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-fs",
- "tauri-plugin-log",
- "tauri-plugin-notification",
- "tauri-plugin-nspopover",
- "tauri-plugin-opener",
- "tauri-plugin-pinia",
- "tauri-plugin-positioner",
- "tauri-plugin-shell",
- "tauri-specta",
- "thiserror 2.0.9",
- "tokio",
- "tpower",
-]
-
-[[package]]
 name = "powerfmt"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5994,6 +5957,43 @@ dependencies = [
  "serde",
  "thiserror 1.0.69",
  "windows-sys 0.59.0",
+]
+
+[[package]]
+name = "trickle"
+version = "0.2.2"
+dependencies = [
+ "bincode",
+ "chrono",
+ "cocoa 0.26.0",
+ "derive_more 1.0.0",
+ "log",
+ "objc",
+ "objc2",
+ "objc2-app-kit",
+ "objc2-foundation",
+ "scopefn",
+ "serde",
+ "serde_json",
+ "specta",
+ "specta-typescript",
+ "sqlx",
+ "strum",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-fs",
+ "tauri-plugin-log",
+ "tauri-plugin-notification",
+ "tauri-plugin-nspopover",
+ "tauri-plugin-opener",
+ "tauri-plugin-pinia",
+ "tauri-plugin-positioner",
+ "tauri-plugin-shell",
+ "tauri-specta",
+ "thiserror 2.0.9",
+ "tokio",
+ "tpower",
 ]
 
 [[package]]

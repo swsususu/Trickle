@@ -7,7 +7,7 @@ export default defineConfig({
     'src-tauri/Cargo.toml',
     'crates/tpower/Cargo.toml',
   ],
-  execute: 'cargo update powerflow tpower',
+  execute: 'cargo update trickle tpower',
   sign: true,
   push: false,
 })

@@ -35,7 +35,7 @@ pub fn setup_menu(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
             // println!("Unknown menu event: {}", event);
         }
     });
-    let app_menu = SubmenuBuilder::new(app, "powerflow")
+    let app_menu = SubmenuBuilder::new(app, "Trickle")
         .about(Some(
             AboutMetadataBuilder::new()
                 .authors(Some(vec!["Samuel Lyon.".to_string()]))

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "powerflow",
+  "productName": "Trickle",
   "version": "0.2.2",
-  "identifier": "Powerflow",
+  "identifier": "com.swsususu.trickle",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",

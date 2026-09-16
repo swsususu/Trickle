@@ -1,5 +1,5 @@
 [package]
-name = "powerflow"
+name = "trickle"
 version = "0.2.2"
 description = "Monitoring power usage of mac and iOS devices"
 authors = [ "Samuel Lyon" ]
@@ -11,7 +11,7 @@ edition = "2021"
 # The `_lib` suffix may seem redundant but it is necessary
 # to make the lib name unique and wouldn't conflict with the bin name.
 # This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
-name = "powerflow_lib"
+name = "trickle_lib"
 crate-type = [
   "staticlib",
   "cdylib",
