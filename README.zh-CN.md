@@ -49,11 +49,17 @@ WebKit 占据；设置窗口改为按需创建而非启动时创建，因此常�
 
 ## 安装
 
-目前没有 Apple 开发者签名，macOS 首次启动会拦截。可以右键点击应用选择「打开」，
-或清除隔离属性：
+Trickle 尚未经过公证，无论用哪种方式安装，macOS 首次启动都会拦截。右键点击应用
+选择「打开」，或清除隔离属性：
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/Trickle.app
+```
+
+通过 Homebrew 安装并不能绕过这一步，它的好处是便于升级。tap 发布后可以：
+
+```bash
+brew install --cask swsususu/tap/trickle
 ```
 
 从 powerflow 迁移：两者是独立的应用，bundle identifier 不同，因此 Trickle 不会

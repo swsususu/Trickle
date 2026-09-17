@@ -56,11 +56,18 @@ fewer web view resident.
 
 ## Installing
 
-No Apple Developer signature yet, so macOS will refuse the app on first launch.
-Either right-click it and choose Open, or clear the quarantine flag:
+Trickle is not notarised, so macOS refuses to open it on first launch either
+way. Right-click the app and choose Open, or clear the attribute:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/Trickle.app
+```
+
+Installing through Homebrew does not avoid this — it only makes upgrades easier.
+Once a tap is published:
+
+```bash
+brew install --cask swsususu/tap/trickle
 ```
 
 Migrating from powerflow: the two are separate applications, with different
