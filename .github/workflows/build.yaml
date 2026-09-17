@@ -41,7 +41,17 @@ jobs:
         with:
           tagName: v__VERSION__
           releaseName: v__VERSION__
-          releaseBody: See the assets to download this version and install.
+          releaseBody: |
+            Download the `.dmg` below, open it and drag Trickle to Applications.
+
+            Trickle is not notarised, so macOS refuses to open it the first
+            time. Right-click the app and choose Open, or run:
+
+            ```
+            xattr -dr com.apple.quarantine /Applications/Trickle.app
+            ```
+
+            See the tag annotation or the README for what changed.
           releaseDraft: true
           prerelease: false
           args: --target ${{ matrix.target }}
