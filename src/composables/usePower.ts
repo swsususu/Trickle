@@ -2,6 +2,7 @@ import type { InterfaceType, NormalizedResource } from '@/bindings'
 import type { Reactive } from 'vue'
 import { events } from '@/bindings'
 import { useDocumentVisibility } from '@vueuse/core'
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 
 import { computed, reactive } from 'vue'
 import { useTab } from './useTab'
@@ -121,6 +122,13 @@ events.deviceEvent.listen(({ payload }) => {
 const vis = useDocumentVisibility()
 const tab = useTab()
 
+// The popover is an NSPopover attached to the status bar: its window is
+// configured with `visible: false`, so `document.visibilityState` is always
+// "hidden". Treating that as "loading" left every panel field stuck on a
+// skeleton, which is why the remaining time disappeared from the popover.
+// Only the regular windows should pause on visibility.
+const isPopoverWindow = getCurrentWebviewWindow().label === 'popover'
+
 const currentPower = computed<RawPowerData>(() => {
   return tab.value === 'local' ? power.local : power.remote[tab.value] || {}
 })
@@ -128,7 +136,8 @@ const currentPower = computed<RawPowerData>(() => {
 export function usePower() {
   return computed(() => ({
     ...currentPower.value.data,
-    isLoading: Object.keys(currentPower.value.data).length === 0 || vis.value === 'hidden',
+    isLoading: Object.keys(currentPower.value.data).length === 0
+      || (!isPopoverWindow && vis.value === 'hidden'),
     isRemote: tab.value !== 'local',
     statistics: currentPower.value.statistics,
   }))
