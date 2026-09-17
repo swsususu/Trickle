@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT day, timestamp, max_capacity, design_capacity, cycle_count\n         FROM battery_health_snapshots ORDER BY day ASC",
+  "describe": {
+    "columns": [
+      {
+        "name": "day",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "timestamp",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "max_capacity",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "design_capacity",
+        "ordinal": 3,
+        "type_info": "Integer"
+      },
+      {
+        "name": "cycle_count",
+        "ordinal": 4,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "c997d43c5e590a0525a8012b0483854075ceae1d7aefc29f682e9348d500db00"
+}

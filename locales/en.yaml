@@ -103,3 +103,21 @@ time_ago_options:
   week_past: 0 weeks ago|last week|{n} weeks ago
   year_future: in 0 years|next year|in {n} years
   year_past: 0 years ago|last year|{n} years ago
+adapter:
+  title: Power Adapter
+  tier: Tier
+  wireless: Wireless
+  limited: Drawing {percent}% of the adapter's rated output
+health:
+  title: Battery Health Trend
+  series: Health
+  over_days: '{days} days'
+  collecting: Collecting data
+  collecting_desc: One snapshot is recorded per day; the trend appears once there are at least two
+processes:
+  title: Energy Usage by App
+  refresh: Refresh
+  measure: Measure energy usage
+  measure_desc: Takes about a second to sample
+  empty: No significant energy usage
+  unit_note: Relative energy impact, same scale as Activity Monitor

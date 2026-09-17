@@ -44,6 +44,18 @@ pub struct NormalizedResource {
     pub time_remain_known: bool,
     pub last_update: i64,
     pub adapter_name: Option<String>,
+    /// Adapter model description, e.g. "pd charger".
+    #[serde(default)]
+    pub adapter_description: Option<String>,
+    /// Rated wattage the adapter reports, as opposed to the wattage currently
+    /// being drawn. A gap between the two explains slow charging.
+    #[serde(default)]
+    pub adapter_rated_watts: i32,
+    /// Negotiated USB-C PD power tier.
+    #[serde(default)]
+    pub adapter_power_tier: i32,
+    #[serde(default)]
+    pub adapter_is_wireless: bool,
     pub cycle_count: i32,
     pub current_capacity: i32,
     pub max_capacity: i32,
@@ -192,6 +204,10 @@ impl From<&IORegistry> for NormalizedResource {
                 .name
                 .clone()
                 .or_else(|| io.adapter_details.description.clone()),
+            adapter_description: io.adapter_details.description.clone(),
+            adapter_rated_watts: io.adapter_details.watts.unwrap_or(0),
+            adapter_power_tier: io.adapter_details.adapter_power_tier.unwrap_or(0),
+            adapter_is_wireless: io.adapter_details.is_wireless.unwrap_or(false),
             cycle_count: io.cycle_count,
             max_capacity: max_cap,
             design_capacity: design_cap,
@@ -241,6 +257,10 @@ impl From<(&IORegistry, &SMCPowerData)> for NormalizedResource {
                 .name
                 .clone()
                 .or_else(|| io.adapter_details.description.clone()),
+            adapter_description: io.adapter_details.description.clone(),
+            adapter_rated_watts: io.adapter_details.watts.unwrap_or(0),
+            adapter_power_tier: io.adapter_details.adapter_power_tier.unwrap_or(0),
+            adapter_is_wireless: io.adapter_details.is_wireless.unwrap_or(false),
             cycle_count: io.cycle_count,
             max_capacity: max_cap,
             design_capacity: design_cap,

@@ -6,5 +6,10 @@
     </div>
     <PowerUsageChart />
     <TechnicalDetail />
+    <div class="grid gap-4 grid-cols-1 lg:grid-cols-2">
+      <BatteryHealthChart />
+      <ProcessEnergyList />
+    </div>
+    <AdapterDetail />
   </div>
 </template>

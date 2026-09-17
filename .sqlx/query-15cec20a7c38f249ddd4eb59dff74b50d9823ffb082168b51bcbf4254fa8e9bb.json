@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO battery_health_snapshots (day, timestamp, max_capacity, design_capacity, cycle_count)\n         VALUES (?, ?, ?, ?, ?)\n         ON CONFLICT(day) DO UPDATE SET\n            timestamp = excluded.timestamp,\n            max_capacity = excluded.max_capacity,\n            design_capacity = excluded.design_capacity,\n            cycle_count = excluded.cycle_count",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "15cec20a7c38f249ddd4eb59dff74b50d9823ffb082168b51bcbf4254fa8e9bb"
+}

@@ -27,6 +27,7 @@ mod ext;
 mod history;
 mod local;
 mod menu;
+mod process_energy;
 mod tray_icon;
 mod util;
 
@@ -120,6 +121,24 @@ async fn get_all_charging_history(
         .map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+#[specta::specta]
+async fn get_battery_health_history(
+    db: State<'_, Pool<Sqlite>>,
+) -> Result<Vec<database::BatteryHealthSnapshot>, String> {
+    database::get_battery_health_history(&db)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Top energy-consuming processes. Takes ~1.5s because `top` needs two
+/// samples, so the frontend should call this on demand, not on a timer.
+#[tauri::command]
+#[specta::specta]
+async fn get_process_energy() -> Vec<process_energy::ProcessEnergy> {
+    process_energy::top_energy_processes().await
+}
+
 pub fn create_specta() -> tauri_specta::Builder {
     let builder = tauri_specta::Builder::<tauri::Wry>::new()
         .commands(collect_commands![
@@ -131,6 +150,8 @@ pub fn create_specta() -> tauri_specta::Builder {
             switch_theme,
             get_detail_by_id,
             get_all_charging_history,
+            get_battery_health_history,
+            get_process_energy,
             delete_history_by_id
         ])
         .events(collect_events![

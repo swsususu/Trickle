@@ -1,7 +1,8 @@
-use std::time::Duration;
+use std::{sync::Mutex, time::Duration};
 
 use serde::{Deserialize, Serialize};
 use specta::Type;
+use sqlx::{Pool, Sqlite};
 use tauri::{async_runtime, AppHandle, Manager, Runtime};
 use tauri_plugin_pinia::ManagerExt;
 use tauri_specta::Event;
@@ -15,7 +16,10 @@ use tpower::{
     provider::{get_mac_ioreg, NormalizedResource},
 };
 
-use crate::event::{PowerUpdatedEvent, PreferenceEvent, StatusBarItem, WindowLoadedEvent};
+use crate::{
+    database::save_battery_health_snapshot,
+    event::{PowerUpdatedEvent, PreferenceEvent, StatusBarItem, WindowLoadedEvent},
+};
 
 pub enum SenderMessage {
     ImmediateSend,
@@ -85,6 +89,48 @@ pub struct PowerTickEvent {
     pub data: NormalizedResource,
 }
 
+/// Writes a battery health snapshot at most once per day.
+///
+/// Called from the power tick, which runs every couple of seconds, so the
+/// in-memory guard keeps it from touching the database on every sample. The
+/// upsert in `save_battery_health_snapshot` is the real safety net; this just
+/// avoids the needless round trips.
+fn record_battery_health<R: Runtime>(app: &AppHandle<R>, data: &NormalizedResource) {
+    // Nothing useful to record if the capacity read failed.
+    if data.max_capacity <= 0 || data.design_capacity <= 0 {
+        return;
+    }
+
+    static LAST_WRITTEN_DAY: Mutex<Option<String>> = Mutex::new(None);
+
+    let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+    {
+        let mut last = LAST_WRITTEN_DAY.lock().unwrap();
+        if last.as_deref() == Some(today.as_str()) {
+            return;
+        }
+        *last = Some(today);
+    }
+
+    let Some(db) = app.try_state::<Pool<Sqlite>>() else {
+        return;
+    };
+    let db = db.inner().clone();
+    let (max_capacity, design_capacity, cycle_count) = (
+        i64::from(data.max_capacity),
+        i64::from(data.design_capacity),
+        i64::from(data.cycle_count),
+    );
+
+    async_runtime::spawn(async move {
+        if let Err(error) =
+            save_battery_health_snapshot(&db, max_capacity, design_capacity, cycle_count).await
+        {
+            log::error!("Failed to save battery health snapshot: {error}");
+        }
+    });
+}
+
 fn emit_power_sample<R: Runtime>(
     app: &AppHandle<R>,
     smc_conn: &mut Option<SMCConnection>,
@@ -124,6 +170,7 @@ fn emit_power_sample<R: Runtime>(
             if let Err(error) = PowerUpdatedEvent::new(bar).emit(app) {
                 log::error!("Failed to emit PowerUpdatedEvent: {error}");
             }
+            record_battery_health(app, &data);
             if let Err(error) = (PowerTickEvent { data }).emit(app) {
                 log::error!("Failed to emit PowerTickEvent: {error}");
             }

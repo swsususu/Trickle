@@ -61,6 +61,12 @@ fn main() {
         println!("battery_health       = N/A (design_capacity is 0)");
     }
     println!("adapter_name         = {:?}", n.adapter_name);
+    println!("adapter_description  = {:?}", n.adapter_description);
+    println!("adapter_rated_watts  = {} W", n.adapter_rated_watts);
+    println!("adapter_power_tier   = {}", n.adapter_power_tier);
+    println!("adapter_is_wireless  = {}", n.adapter_is_wireless);
+    println!("external_connected   = {}", n.external_connected);
+    println!("fully_charged        = {}", n.fully_charged);
     println!("battery_level        = {}", n.data.battery_level);
     println!("absolute_level       = {:.1}%", n.data.absolute_battery_level);
     println!("temperature          = {:.2}", n.data.temperature);

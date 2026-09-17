@@ -31,6 +31,61 @@ pub struct ChargingHistory {
     adapter_name: String,
 }
 
+#[derive(Debug, sqlx::FromRow, Type, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BatteryHealthSnapshot {
+    pub day: String,
+    pub timestamp: i64,
+    pub max_capacity: i64,
+    pub design_capacity: i64,
+    pub cycle_count: i64,
+}
+
+/// Records today's battery health, replacing any earlier sample for the day.
+///
+/// Keeping one row per day bounds the table: a machine running continuously
+/// adds 365 rows a year rather than one per sampling tick. Upgrades preserve
+/// this history, since sqlx migrations only add the table and never rewrite it.
+pub async fn save_battery_health_snapshot(
+    conn: &SqlitePool,
+    max_capacity: i64,
+    design_capacity: i64,
+    cycle_count: i64,
+) -> Result<SqliteQueryResult, sqlx::Error> {
+    let now = chrono::Local::now();
+    let day = now.format("%Y-%m-%d").to_string();
+    let timestamp = now.timestamp();
+
+    query!(
+        "INSERT INTO battery_health_snapshots (day, timestamp, max_capacity, design_capacity, cycle_count)
+         VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT(day) DO UPDATE SET
+            timestamp = excluded.timestamp,
+            max_capacity = excluded.max_capacity,
+            design_capacity = excluded.design_capacity,
+            cycle_count = excluded.cycle_count",
+        day,
+        timestamp,
+        max_capacity,
+        design_capacity,
+        cycle_count
+    )
+    .execute(conn)
+    .await
+}
+
+pub async fn get_battery_health_history(
+    conn: &SqlitePool,
+) -> Result<Vec<BatteryHealthSnapshot>, sqlx::Error> {
+    query_as!(
+        BatteryHealthSnapshot,
+        "SELECT day, timestamp, max_capacity, design_capacity, cycle_count
+         FROM battery_health_snapshots ORDER BY day ASC"
+    )
+    .fetch_all(conn)
+    .await
+}
+
 pub async fn get_all_charging_history(
     conn: &SqlitePool,
 ) -> Result<Vec<ChargingHistory>, sqlx::Error> {

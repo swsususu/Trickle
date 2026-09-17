@@ -39,6 +39,21 @@ async getAllChargingHistory() : Promise<Result<ChargingHistory[], string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async getBatteryHealthHistory() : Promise<Result<BatteryHealthSnapshot[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_battery_health_history") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Top energy-consuming processes. Takes ~1.5s because `top` needs two
+ * samples, so the frontend should call this on demand, not on a timer.
+ */
+async getProcessEnergy() : Promise<ProcessEnergy[]> {
+    return await TAURI_INVOKE("get_process_energy");
+},
 async deleteHistoryById(id: number) : Promise<Result<number, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("delete_history_by_id", { id }) };
@@ -97,6 +112,7 @@ export type Action =
  * Unsubcribing and resubscribing may recover the notification system.
  */
 "NotificationStopped" | "Paired"
+export type BatteryHealthSnapshot = { day: string; timestamp: number; maxCapacity: number; designCapacity: number; cycleCount: number }
 export type ChargingHistory = { id: number; fromLevel: number; endLevel: number; chargingTime: number; timestamp: number; name: string; udid: string; isRemote: number; adapterName: string }
 export type ChargingHistoryDetail = { avg: NormalizedData; peak: NormalizedData; curve: NormalizedResource[]; raw: string[] }
 export type DeviceEvent = { udid: string; name: string; interface: InterfaceType; action: Action }
@@ -130,10 +146,29 @@ fullyCharged?: boolean;
 /**
  * True when an adapter is plugged in, whether or not it is charging.
  */
-externalConnected?: boolean; timeRemain: Duration; timeRemainKnown: boolean; lastUpdate: number; adapterName: string | null; cycleCount: number; currentCapacity: number; maxCapacity: number; designCapacity?: number }
+externalConnected?: boolean; timeRemain: Duration; timeRemainKnown: boolean; lastUpdate: number; adapterName: string | null; 
+/**
+ * Adapter model description, e.g. "pd charger".
+ */
+adapterDescription?: string | null; 
+/**
+ * Rated wattage the adapter reports, as opposed to the wattage currently
+ * being drawn. A gap between the two explains slow charging.
+ */
+adapterRatedWatts?: number; 
+/**
+ * Negotiated USB-C PD power tier.
+ */
+adapterPowerTier?: number; adapterIsWireless?: boolean; cycleCount: number; currentCapacity: number; maxCapacity: number; designCapacity?: number }
 export type PowerTickEvent = { data: NormalizedResource }
 export type PowerUpdatedEvent = string
 export type PreferenceEvent = { theme: Theme } | { animationsEnabled: boolean } | { updateInterval: number } | { language: string } | { statusBarItem: StatusBarItem } | { statusBarShowCharging: boolean }
+export type ProcessEnergy = { pid: number; name: string; 
+/**
+ * Energy impact, in the same arbitrary units Activity Monitor uses.
+ * Comparable between processes, not a wattage.
+ */
+impact: number }
 /**
  * Which power metric to show in the status bar.
  * 

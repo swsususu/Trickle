@@ -52,6 +52,12 @@ with_repr! {
         pub name: Option<String>,
         pub current: Option<i32>,
         pub description: Option<String>,
+        // Negotiated USB-C PD tier. Useful for explaining why a high-wattage
+        // charger is delivering less than its rating.
+        pub adapter_power_tier: Option<i32>,
+        // Ceilings the adapter advertises, as opposed to what is in use now.
+        pub max_voltage: Option<i32>,
+        pub max_current: Option<i32>,
     }
 
 
@@ -156,6 +162,9 @@ impl From<repr::AdapterDetails> for AdapterDetails {
             name: value.name,
             current: value.current,
             description: value.description,
+            adapter_power_tier: value.adapter_power_tier,
+            max_voltage: value.max_voltage,
+            max_current: value.max_current,
         }
     }
 }
