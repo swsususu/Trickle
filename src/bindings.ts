@@ -126,7 +126,11 @@ heatpipePower: number; batteryLevel: number; absoluteBatteryLevel: number; tempe
  * True when the pack is full. Distinct from `is_charging`, which is
  * false while resting on the adapter at 100%.
  */
-fullyCharged?: boolean; timeRemain: Duration; timeRemainKnown: boolean; lastUpdate: number; adapterName: string | null; cycleCount: number; currentCapacity: number; maxCapacity: number; designCapacity?: number }
+fullyCharged?: boolean; 
+/**
+ * True when an adapter is plugged in, whether or not it is charging.
+ */
+externalConnected?: boolean; timeRemain: Duration; timeRemainKnown: boolean; lastUpdate: number; adapterName: string | null; cycleCount: number; currentCapacity: number; maxCapacity: number; designCapacity?: number }
 export type PowerTickEvent = { data: NormalizedResource }
 export type PowerUpdatedEvent = string
 export type PreferenceEvent = { theme: Theme } | { animationsEnabled: boolean } | { updateInterval: number } | { language: string } | { statusBarItem: StatusBarItem } | { statusBarShowCharging: boolean }

@@ -116,6 +116,11 @@ with_repr! {
         // so the top-level key is often missing.
         #[serde(default)]
         pub design_capacity: i32,
+        // Whether an adapter is plugged in. Distinct from `is_charging`: at
+        // 100% on the adapter, external power is connected but nothing is
+        // being charged.
+        #[serde(default)]
+        pub external_connected: bool,
         pub fully_charged: bool,
         pub instant_amperage: i32,
         pub is_charging: bool,
@@ -195,6 +200,7 @@ impl From<repr::IORegistry> for IORegistry {
             current_capacity: value.current_capacity,
             cycle_count: value.cycle_count,
             design_capacity: value.design_capacity,
+            external_connected: value.external_connected,
             fully_charged: value.fully_charged,
             instant_amperage: value.instant_amperage,
             is_charging: value.is_charging,

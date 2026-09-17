@@ -39,8 +39,11 @@ const buttonText = computed(() => {
   </div>
 
   <Skeleton v-if="power.isLoading" class="w-24 h-6" />
+  <!-- Show adapter specs whenever it is plugged in. While resting at 100% the
+       battery is not charging and has no meaningful remaining time, so the
+       adapter is the useful thing to report. -->
   <div
-    v-else-if="power.isCharging"
+    v-else-if="power.isCharging || (power.externalConnected && !power.timeRemainKnown)"
     class="rounded-md
     bg-gradient-to-r from-blue-500 to-blue-600
     px-2 py-1 text-xs truncate font-mono"
