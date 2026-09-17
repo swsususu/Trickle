@@ -33,6 +33,10 @@ pub mod remote;
 pub struct NormalizedResource {
     pub is_local: bool,
     pub is_charging: bool,
+    /// True when the pack is full. Distinct from `is_charging`, which is
+    /// false while resting on the adapter at 100%.
+    #[serde(default)]
+    pub fully_charged: bool,
     pub time_remain: Duration,
     pub time_remain_known: bool,
     pub last_update: i64,
@@ -173,6 +177,7 @@ impl From<&IORegistry> for NormalizedResource {
         Self {
             is_local: false,
             is_charging: io.is_charging,
+            fully_charged: io.fully_charged,
             // Same sentinel handling as local — iOS often reports -1 / 65535
             // while TimeRemaining is still computing.
             time_remain: time_remain.unwrap_or(Duration::ZERO),
@@ -219,6 +224,7 @@ impl From<(&IORegistry, &SMCPowerData)> for NormalizedResource {
             // Prefer amperage / IOKit over SMC CHCC — on macOS 27 CHCC can
             // stay true while the battery is discharging.
             is_charging: is_charging_local(io, smc),
+            fully_charged: io.fully_charged,
             // Prefer IORegistry's TimeRemaining (updated by IOKit every few
             // seconds) over SMC's B0TE/B0TF (which can stay stale for many
             // minutes). IOKit uses -1 (or a very large value) to signal

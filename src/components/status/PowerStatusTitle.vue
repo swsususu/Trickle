@@ -7,6 +7,11 @@ const rawData = usePowerRaw()
 
 const showRemainDuration = ref(true)
 const buttonText = computed(() => {
+  // IOKit reports 65535 / -1 while it is still estimating; timeRemain is
+  // then zero and must not be rendered as "0h 0m".
+  if (!power.value.timeRemainKnown) {
+    return '--'
+  }
   if (showRemainDuration.value) {
     const minutes = power.value.timeRemain.secs / 60
     const hours = Math.floor(minutes / 60)

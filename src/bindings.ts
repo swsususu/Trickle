@@ -121,10 +121,22 @@ brightnessPower: number;
 /**
  * 0 if not available
  */
-heatpipePower: number; batteryLevel: number; absoluteBatteryLevel: number; temperature: number; adapterWatts: number; adapterVoltage: number; adapterAmperage: number }) & { isLocal: boolean; isCharging: boolean; timeRemain: Duration; lastUpdate: number; adapterName: string | null; cycleCount: number; currentCapacity: number; maxCapacity: number; designCapacity?: number }
+heatpipePower: number; batteryLevel: number; absoluteBatteryLevel: number; temperature: number; adapterWatts: number; adapterVoltage: number; adapterAmperage: number }) & { isLocal: boolean; isCharging: boolean; 
+/**
+ * True when the pack is full. Distinct from `is_charging`, which is
+ * false while resting on the adapter at 100%.
+ */
+fullyCharged?: boolean; timeRemain: Duration; timeRemainKnown: boolean; lastUpdate: number; adapterName: string | null; cycleCount: number; currentCapacity: number; maxCapacity: number; designCapacity?: number }
 export type PowerTickEvent = { data: NormalizedResource }
 export type PowerUpdatedEvent = string
 export type PreferenceEvent = { theme: Theme } | { animationsEnabled: boolean } | { updateInterval: number } | { language: string } | { statusBarItem: StatusBarItem } | { statusBarShowCharging: boolean }
+/**
+ * Which power metric to show in the status bar.
+ * 
+ * Implements a forgiving `Deserialize`: unknown string values (e.g. stale
+ * `"none"` persisted by older builds) fall back to `System` instead of
+ * panicking inside tauri-specta and killing the power-tick task.
+ */
 export type StatusBarItem = "system" | "screen" | "heatpipe"
 export type Theme = "light" | "dark" | "system"
 export type WindowLoadedEvent = null
