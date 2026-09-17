@@ -31,20 +31,26 @@ jobs:
         with:
           targets: x86_64-apple-darwin,aarch64-apple-darwin
 
-      # Only the .app is built here. tauri-bundler's DMG step drives Finder
-      # over AppleScript to position the icons, which fails on macOS 27 with
-      # "-10006: can't set item ... to {180, 170}" and aborts the whole build,
-      # leaving the release with no asset at all. The DMG is assembled below
-      # with hdiutil instead, which produces a plain but working image.
+      # Two deviations from a stock tauri-action setup, both required on
+      # macOS 27:
+      #
+      # 1. No APPLE_* signing variables. Passing them while the secrets are
+      #    unset makes tauri-bundler try to import an empty certificate and
+      #    fail with "failed to import keychain certificate", which is what
+      #    aborted the first tagged builds. Without them the app is ad-hoc
+      #    signed, which is what the release notes tell users to expect. Set
+      #    the secrets and add them back to get signed builds.
+      #
+      # 2. --bundles app. tauri-bundler's DMG step drives Finder over
+      #    AppleScript to position icons and fails locally on macOS 27 with
+      #    "-10006: can't set item ... to {180, 170}", aborting the bundle and
+      #    leaving the release empty. The DMG is assembled with hdiutil below.
       - uses: tauri-apps/tauri-action@v0
         id: tauri
         env:
           # https://github.com/tauri-apps/tauri-action/issues/740
           CI: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
 
         with:
           tagName: v__VERSION__
@@ -70,6 +76,13 @@ jobs:
           APP="target/${{ matrix.target }}/release/bundle/macos/Trickle.app"
           test -d "$APP" || { echo "missing $APP"; exit 1; }
 
+          # Without a certificate the bundle only carries a linker-signed
+          # signature, which leaves Info.plist unbound to the identifier. A
+          # deep ad-hoc signature fixes that; a real certificate would
+          # override it.
+          codesign --force --deep --sign - "$APP"
+          codesign --verify --deep --strict "$APP"
+
           VERSION=$(node -p "require('./package.json').version")
           DMG="Trickle_${VERSION}_universal.dmg"
 
@@ -84,6 +97,7 @@ jobs:
           rm -rf "$STAGE"
 
           hdiutil verify "$DMG"
+          lipo -info "$APP/Contents/MacOS/trickle"
           echo "DMG_PATH=$DMG" >> "$GITHUB_ENV"
 
       - name: Upload DMG to the release
