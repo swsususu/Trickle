@@ -1,6 +1,6 @@
 [package]
 name = "trickle"
-version = "0.0.1"
+version = "0.0.2"
 description = "Monitoring power usage of mac and iOS devices"
 authors = [ "Samuel Lyon" ]
 edition = "2021"
