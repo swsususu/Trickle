@@ -40,6 +40,10 @@ async function notifyAvailable(version: string) {
         title: 'Trickle',
         body: `Version ${version} is available. Open Settings to install it.`,
       })
+      console.info('[updater] notification sent')
+    }
+    else {
+      console.warn('[updater] notification permission denied')
     }
   }
   catch (error) {
@@ -67,11 +71,15 @@ async function checkForUpdate(silent = false): Promise<void> {
       pending = update
       availableVersion.value = update.version
       state.value = 'available'
+      console.info(`[updater] ${update.version} available`)
       if (silent) {
         await notifyAvailable(update.version)
       }
     }
     else {
+      // Logged so a launch check that found nothing is distinguishable from
+      // one that never ran.
+      console.info('[updater] no update available')
       state.value = silent ? 'idle' : 'none'
     }
   }
