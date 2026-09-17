@@ -2,7 +2,11 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Capability for the main window",
-  "windows": ["main", "popover", "settings"],
+  "windows": [
+    "main",
+    "popover",
+    "settings"
+  ],
   "permissions": [
     "core:default",
     "opener:default",
@@ -14,6 +18,8 @@
     "notification:default",
     "dialog:allow-save",
     "fs:allow-create",
-    "fs:allow-write"
+    "fs:allow-write",
+    "updater:default",
+    "process:default"
   ]
 }

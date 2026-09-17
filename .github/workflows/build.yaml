@@ -45,12 +45,24 @@ jobs:
       #    AppleScript to position icons and fails locally on macOS 27 with
       #    "-10006: can't set item ... to {180, 170}", aborting the bundle and
       #    leaving the release empty. The DMG is assembled with hdiutil below.
+      #
+      # 3. --bundles app,updater. The updater target produces the signed
+      #    .app.tar.gz and .sig that the updater plugin consumes; without it
+      #    there is nothing for an installed copy to update to.
       - uses: tauri-apps/tauri-action@v0
         id: tauri
         env:
           # https://github.com/tauri-apps/tauri-action/issues/740
           CI: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Signs the updater artifacts. Updates are rejected without a
+          # signature matching the pubkey baked into tauri.conf.json, so this
+          # is what stops anyone else pushing an update to installed copies.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          # The key is stored in rsign's encrypted format even with an empty
+          # password, and tauri-bundler skips signing entirely if this is unset
+          # rather than prompting: the tarball gets built with no .sig beside it.
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
         with:
           tagName: v__VERSION__
@@ -68,21 +80,19 @@ jobs:
             See the tag annotation or the README for what changed.
           releaseDraft: true
           prerelease: false
-          args: --target ${{ matrix.target }} --bundles app
+          args: --target ${{ matrix.target }} --bundles app,updater
 
       - name: Assemble DMG
         run: |
           set -euo pipefail
-          APP="target/${{ matrix.target }}/release/bundle/macos/Trickle.app"
+          BUNDLE="target/${{ matrix.target }}/release/bundle"
+          APP="$BUNDLE/macos/Trickle.app"
           test -d "$APP" || { echo "missing $APP"; exit 1; }
 
-          # Without a certificate the bundle only carries a linker-signed
-          # signature, which leaves Info.plist unbound to the identifier. A
-          # deep ad-hoc signature fixes that; a real certificate would
-          # override it.
-          codesign --force --deep --sign - "$APP"
-          codesign --verify --deep --strict "$APP"
-
+          # The updater tarball is produced and signed by tauri-action before
+          # this step, from this same .app. Re-signing the bundle afterwards
+          # would leave the tarball's signature describing different bytes, so
+          # the DMG copy is signed rather than the original.
           VERSION=$(node -p "require('./package.json').version")
           DMG="Trickle_${VERSION}_universal.dmg"
 
@@ -92,6 +102,13 @@ jobs:
           cp -R "$APP" "$STAGE/"
           ln -s /Applications "$STAGE/Applications"
 
+          # Without a certificate the bundle only carries a linker-signed
+          # signature, which leaves Info.plist unbound to the identifier. A
+          # deep ad-hoc signature fixes that; a real certificate would
+          # override it.
+          codesign --force --deep --sign - "$STAGE/Trickle.app"
+          codesign --verify --deep --strict "$STAGE/Trickle.app"
+
           hdiutil create -volname Trickle -srcfolder "$STAGE" \
             -ov -format UDZO "$DMG"
           rm -rf "$STAGE"
@@ -100,7 +117,47 @@ jobs:
           lipo -info "$APP/Contents/MacOS/trickle"
           echo "DMG_PATH=$DMG" >> "$GITHUB_ENV"
 
-      - name: Upload DMG to the release
+      # latest.json is what the updater plugin fetches. tauri-action does not
+      # generate it, so it is built here from the signature tauri-bundler
+      # produced next to the tarball.
+      - name: Write latest.json
+        run: |
+          set -euo pipefail
+          BUNDLE="target/${{ matrix.target }}/release/bundle"
+          TARBALL=$(ls "$BUNDLE"/macos/*.app.tar.gz)
+          SIG_FILE="${TARBALL}.sig"
+          test -f "$SIG_FILE" || { echo "missing $SIG_FILE"; exit 1; }
+
+          VERSION=$(node -p "require('./package.json').version")
+          NAME=$(basename "$TARBALL")
+
+          export UPD_VERSION="$VERSION"
+          export UPD_SIG=$(cat "$SIG_FILE")
+          export UPD_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/${NAME}"
+          # The dialog shows the tag's subject line as release notes.
+          export UPD_NOTES=$(git tag -l --format='%(contents:subject)' "${GITHUB_REF_NAME}")
+
+          node -e '
+            const fs = require("fs");
+            const platform = {
+              signature: process.env.UPD_SIG,
+              url: process.env.UPD_URL,
+            };
+            fs.writeFileSync("latest.json", JSON.stringify({
+              version: process.env.UPD_VERSION,
+              notes: process.env.UPD_NOTES,
+              pub_date: new Date().toISOString(),
+              // The bundle is universal, so both architectures point at it.
+              platforms: {
+                "darwin-x86_64": platform,
+                "darwin-aarch64": platform,
+              },
+            }, null, 2) + "\n");
+          '
+          cat latest.json
+
+      - name: Upload assets to the release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${GITHUB_REF_NAME}" "${DMG_PATH}" --clobber
+        run: |
+          gh release upload "${GITHUB_REF_NAME}" "${DMG_PATH}" latest.json --clobber

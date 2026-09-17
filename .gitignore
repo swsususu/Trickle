@@ -27,3 +27,6 @@ target
 .auto-imports
 .env
 db.sqlite
+# Updater signing keys must never be committed.
+*.key
+*.key.pub

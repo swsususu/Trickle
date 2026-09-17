@@ -123,3 +123,10 @@ processes:
   measure_desc: Takes about a second to sample
   empty: No significant energy usage
   unit_note: Relative energy impact, same scale as Activity Monitor
+update:
+  check: Check for updates
+  checking: Checking…
+  install: Install {version}
+  downloading: Downloading…
+  up_to_date: Up to date
+  failed: Check failed

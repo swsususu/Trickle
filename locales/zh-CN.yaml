@@ -119,3 +119,10 @@ processes:
   measure_desc: 采样约需一秒
   empty: 无明显耗电进程
   unit_note: 相对耗电影响值，与活动监视器同一标准
+update:
+  check: 检查更新
+  checking: 检查中…
+  install: 安装 {version}
+  downloading: 下载中…
+  up_to_date: 已是最新
+  failed: 检查失败
