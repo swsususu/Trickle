@@ -121,6 +121,9 @@ jobs:
       # generate it, so it is built here from the signature tauri-bundler
       # produced next to the tarball.
       - name: Write latest.json
+        env:
+          # Needed to read the uploaded asset's name back off the release.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           BUNDLE="target/${{ matrix.target }}/release/bundle"
@@ -129,7 +132,15 @@ jobs:
           test -f "$SIG_FILE" || { echo "missing $SIG_FILE"; exit 1; }
 
           VERSION=$(node -p "require('./package.json').version")
-          NAME=$(basename "$TARBALL")
+
+          # tauri-action renames the tarball when it uploads: the local file is
+          # Trickle.app.tar.gz but the release asset is
+          # Trickle_universal.app.tar.gz. Using the local name here produced a
+          # latest.json whose URL 404s, so the asset name is read back from the
+          # release rather than derived from the path.
+          NAME=$(gh release view "${GITHUB_REF_NAME}" \
+            --json assets --jq '.assets[].name | select(endswith(".app.tar.gz"))')
+          test -n "$NAME" || { echo "no .app.tar.gz asset on the release"; exit 1; }
 
           export UPD_VERSION="$VERSION"
           export UPD_SIG=$(cat "$SIG_FILE")
