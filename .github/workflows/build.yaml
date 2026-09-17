@@ -12,6 +12,8 @@ jobs:
         include:
           - target: universal-apple-darwin
     runs-on: macos-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -29,7 +31,13 @@ jobs:
         with:
           targets: x86_64-apple-darwin,aarch64-apple-darwin
 
+      # Only the .app is built here. tauri-bundler's DMG step drives Finder
+      # over AppleScript to position the icons, which fails on macOS 27 with
+      # "-10006: can't set item ... to {180, 170}" and aborts the whole build,
+      # leaving the release with no asset at all. The DMG is assembled below
+      # with hdiutil instead, which produces a plain but working image.
       - uses: tauri-apps/tauri-action@v0
+        id: tauri
         env:
           # https://github.com/tauri-apps/tauri-action/issues/740
           CI: false
@@ -54,4 +62,31 @@ jobs:
             See the tag annotation or the README for what changed.
           releaseDraft: true
           prerelease: false
-          args: --target ${{ matrix.target }}
+          args: --target ${{ matrix.target }} --bundles app
+
+      - name: Assemble DMG
+        run: |
+          set -euo pipefail
+          APP="target/${{ matrix.target }}/release/bundle/macos/Trickle.app"
+          test -d "$APP" || { echo "missing $APP"; exit 1; }
+
+          VERSION=$(node -p "require('./package.json').version")
+          DMG="Trickle_${VERSION}_universal.dmg"
+
+          # Stage the app next to an /Applications symlink so the image offers
+          # the usual drag target, without asking Finder to lay it out.
+          STAGE=$(mktemp -d)
+          cp -R "$APP" "$STAGE/"
+          ln -s /Applications "$STAGE/Applications"
+
+          hdiutil create -volname Trickle -srcfolder "$STAGE" \
+            -ov -format UDZO "$DMG"
+          rm -rf "$STAGE"
+
+          hdiutil verify "$DMG"
+          echo "DMG_PATH=$DMG" >> "$GITHUB_ENV"
+
+      - name: Upload DMG to the release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${GITHUB_REF_NAME}" "${DMG_PATH}" --clobber
