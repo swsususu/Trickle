@@ -38,6 +38,22 @@ are untested; the bundle's declared minimum is inherited from Tauri's default
 and is not a tested floor. Intel Macs run but some SMC sensors are unavailable
 there (see [#18](https://github.com/lzt1008/powerflow/issues/18)).
 
+## Resource usage
+
+Measured on macOS 27.0 / M-series, sampling every 5 seconds, using CPU time
+deltas and physical footprint rather than the `%cpu` and RSS columns, which
+report lifetime averages and shared mappings respectively:
+
+| | CPU | Memory |
+|---|---|---|
+| Menu bar only | ~1.7% | 270-290 MB |
+| Main window open | ~19% | ~450 MB |
+
+The window-open figure is the cost of the live chart and the animated readout;
+turning off animations in Settings reduces it. Memory is dominated by WebKit:
+the settings window is created on demand rather than at launch, which keeps one
+fewer web view resident.
+
 ## Installing
 
 No Apple Developer signature yet, so macOS will refuse the app on first launch.

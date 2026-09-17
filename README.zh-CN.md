@@ -33,6 +33,20 @@ Trickle 基于 [lzt1008/powerflow](https://github.com/lzt1008/powerflow) 二次�
 但部分 SMC 传感器在 Intel 机型上不可用（见
 [#18](https://github.com/lzt1008/powerflow/issues/18)）。
 
+## 资源占用
+
+在 macOS 27.0 / M 系列芯片、5 秒采样间隔下实测。采用 CPU 时间增量与
+physical footprint，而非 `%cpu` 列和 RSS——前者是进程生命周期平均值，
+后者包含共享库映射：
+
+| | CPU | 内存 |
+|---|---|---|
+| 仅菜单栏 | ~1.7% | 270-290 MB |
+| 主窗口打开 | ~19% | ~450 MB |
+
+主窗口打开时的开销来自实时图表与数字动画，在设置中关闭动画可降低。内存主要由
+WebKit 占据；设置窗口改为按需创建而非启动时创建，因此常驻的 web view 少一个。
+
 ## 安装
 
 目前没有 Apple 开发者签名，macOS 首次启动会拦截。可以右键点击应用选择「打开」，

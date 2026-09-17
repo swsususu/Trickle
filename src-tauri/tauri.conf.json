@@ -34,6 +34,7 @@
       },
       {
         "label": "settings",
+        "create": false,
         "url": "settings.html",
         "titleBarStyle": "Overlay",
         "title": "Settings",

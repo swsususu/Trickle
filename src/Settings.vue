@@ -314,8 +314,17 @@ function SettingsSection(props: SettingsSectionProps) {
         <div class="text-sm font-medium text-muted-foreground">
           {{ $t('settings.author') }}
         </div>
-        <div class="text-sm">
-          Samuel Lyon
+        <div class="text-sm flex items-center flex-wrap gap-x-1">
+          <a
+            class="underline cursor-pointer"
+            @click="open('https://github.com/swsususu')"
+          >swsususu</a>
+          <span class="text-muted-foreground">·</span>
+          <!-- Upstream author: powerflow, which Trickle is based on. -->
+          <a
+            class="underline cursor-pointer"
+            @click="open('https://github.com/lzt1008')"
+          >Samuel Lyon</a>
         </div>
       </div>
     </div>

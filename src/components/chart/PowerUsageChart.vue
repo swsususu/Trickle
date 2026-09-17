@@ -23,8 +23,21 @@ const localeMap = computed(() => ({
   'System In': t('flow.system_in'),
 }))
 
+// Read statistics from the raw store rather than through usePower(), which
+// rebuilds its result object on every tick. Going through it made this map
+// re-run and hand the chart a brand new array five times more often than the
+// data actually changes, since statistics only grow once every
+// LOCAL_UPDATE_INTERVAL ticks.
+const powerData = usePowerData()
+const tab = useTab()
+const statistics = computed(() =>
+  tab.value === 'local'
+    ? powerData.local.statistics
+    : powerData.remote[tab.value]?.statistics ?? [],
+)
+
 const localedData = computed(() => {
-  return power.value.statistics.map((item) => {
+  return statistics.value.map((item) => {
     return Object.fromEntries(Object.entries(item).map(([key, value]) => [localeMap.value[key] || key, value]))
   })
 })
