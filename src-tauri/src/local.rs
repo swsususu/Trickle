@@ -43,10 +43,6 @@ fn sanitize_interval_ms(ms: u64) -> Duration {
     }
 }
 
-fn sanitize_interval(ms: u64) -> Duration {
-    sanitize_interval_ms(ms)
-}
-
 fn make_interval(period: Duration) -> time::Interval {
     // Avoid the immediate first tick that `interval()` fires on creation.
     let mut timer = time::interval_at(Instant::now() + period, period);
@@ -159,7 +155,7 @@ pub fn start_sender<R: Runtime>(
     };
     let mut next_smc_retry = Instant::now() + Duration::from_secs(30);
 
-    let mut timer = make_interval(sanitize_interval(
+    let mut timer = make_interval(sanitize_interval_ms(
         app.pinia()
             .try_get::<u64>("preference", "updateInterval")
             .unwrap_or(2000),

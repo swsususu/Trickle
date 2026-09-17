@@ -133,9 +133,9 @@ export type PreferenceEvent = { theme: Theme } | { animationsEnabled: boolean } 
 /**
  * Which power metric to show in the status bar.
  * 
- * Implements a forgiving `Deserialize`: unknown string values (e.g. stale
- * `"none"` persisted by older builds) fall back to `System` instead of
- * panicking inside tauri-specta and killing the power-tick task.
+ * Implements a forgiving `Deserialize`: unknown or non-string values (e.g. a
+ * stale `"none"` or `null` persisted by older builds) fall back to `System`
+ * instead of panicking inside tauri-specta and killing the power-tick task.
  */
 export type StatusBarItem = "system" | "screen" | "heatpipe"
 export type Theme = "light" | "dark" | "system"
