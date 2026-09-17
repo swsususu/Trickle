@@ -56,11 +56,14 @@ Trickle 尚未经过公证，无论用哪种方式安装，macOS 首次启动都
 xattr -dr com.apple.quarantine /Applications/Trickle.app
 ```
 
-通过 Homebrew 安装并不能绕过这一步，它的好处是便于升级。tap 发布后可以：
+通过 Homebrew 安装并不能绕过这一步，它的好处是便于升级：
 
 ```bash
 brew install --cask swsususu/tap/trickle
 ```
+
+也可以从 [Releases](https://github.com/swsususu/Trickle/releases/latest)
+下载 DMG。
 
 从 powerflow 迁移：两者是独立的应用，bundle identifier 不同，因此 Trickle 不会
 覆盖已安装的 powerflow，也不会继承它的历史数据。如果不想看到两个菜单栏图标，

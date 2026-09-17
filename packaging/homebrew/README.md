@@ -4,9 +4,11 @@
 install path — Homebrew reads casks from a tap, so the file has to be copied
 into one.
 
-## Creating the tap, once
+## The tap
 
-A tap is just a GitHub repository whose name starts with `homebrew-`:
+Live at [swsususu/homebrew-tap](https://github.com/swsususu/homebrew-tap),
+created with the steps below. A tap is just a GitHub repository whose name
+starts with `homebrew-`:
 
 1. Create `swsususu/homebrew-tap` on GitHub.
 2. Add the cask at `Casks/trickle.rb` (the `Casks/` directory is required).

@@ -3,10 +3,9 @@ cask "trickle" do
   #   shasum -a 256 Trickle_<version>_universal.dmg
   # `:no_check` would avoid this step but silently accepts a tampered download.
   version "0.0.1"
-  sha256 "REPLACE_WITH_SHA256_OF_THE_RELEASE_DMG"
+  sha256 "a456408d28d246aedd137b6ed6093c9723e22673281656c1bc1543cdf1bd4b43"
 
-  url "https://github.com/swsususu/Trickle/releases/download/v#{version}/Trickle_#{version}_universal.dmg",
-      verified: "github.com/swsususu/Trickle/"
+  url "https://github.com/swsususu/Trickle/releases/download/v#{version}/Trickle_#{version}_universal.dmg"
   name "Trickle"
   desc "Menu bar power monitor for battery health, power flow and charging"
   homepage "https://github.com/swsususu/Trickle"

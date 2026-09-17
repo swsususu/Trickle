@@ -63,12 +63,14 @@ way. Right-click the app and choose Open, or clear the attribute:
 xattr -dr com.apple.quarantine /Applications/Trickle.app
 ```
 
-Installing through Homebrew does not avoid this — it only makes upgrades easier.
-Once a tap is published:
+Installing through Homebrew does not avoid this — it only makes upgrades easier:
 
 ```bash
 brew install --cask swsususu/tap/trickle
 ```
+
+Or download the DMG from
+[Releases](https://github.com/swsususu/Trickle/releases/latest).
 
 Migrating from powerflow: the two are separate applications, with different
 bundle identifiers, so Trickle will not replace an existing powerflow install and
