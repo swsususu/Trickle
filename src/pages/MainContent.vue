@@ -10,6 +10,5 @@
       <BatteryHealthChart />
       <ProcessEnergyList />
     </div>
-    <AdapterDetail />
   </div>
 </template>

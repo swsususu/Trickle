@@ -100,10 +100,12 @@ time_ago_options:
   year_future: 现在|明年|{n} 年后
   year_past: 现在|去年|{n} 年前
 adapter:
-  title: 电源适配器
-  tier: 档位
+  drawing: 当前功率
+  rated: 额定功率
+  tier: PD 档位
+  type: 类型
   wireless: 无线充电
-  limited: 当前功率为适配器额定输出的 {percent}%
+  loss: 转换损耗
 health:
   title: 电池健康趋势
   series: 健康度

@@ -62,7 +62,6 @@ fn main() {
     }
     println!("adapter_name         = {:?}", n.adapter_name);
     println!("adapter_description  = {:?}", n.adapter_description);
-    println!("adapter_rated_watts  = {} W", n.adapter_rated_watts);
     println!("adapter_power_tier   = {}", n.adapter_power_tier);
     println!("adapter_is_wireless  = {}", n.adapter_is_wireless);
     println!("external_connected   = {}", n.external_connected);
@@ -76,5 +75,8 @@ fn main() {
     println!("brightness_power     = {:.2} W", n.data.brightness_power);
     println!("heatpipe_power       = {:.2} W", n.data.heatpipe_power);
     println!("adapter_power        = {:.2} W", n.data.adapter_power);
+    println!("data.adapter_watts   = {:.2} W  (AdapterDetails.Watts = rating)", n.data.adapter_watts);
+    println!("data.adapter_voltage = {:.2} V", n.data.adapter_voltage);
+    println!("data.adapter_amperage= {:.2} A", n.data.adapter_amperage);
     println!("efficiency_loss      = {:.2} W", n.data.efficiency_loss);
 }

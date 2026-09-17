@@ -104,10 +104,12 @@ time_ago_options:
   year_future: in 0 years|next year|in {n} years
   year_past: 0 years ago|last year|{n} years ago
 adapter:
-  title: Power Adapter
-  tier: Tier
+  drawing: Drawing
+  rated: Rated
+  tier: PD tier
+  type: Type
   wireless: Wireless
-  limited: Drawing {percent}% of the adapter's rated output
+  loss: Conversion loss
 health:
   title: Battery Health Trend
   series: Health

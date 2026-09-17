@@ -152,11 +152,6 @@ externalConnected?: boolean; timeRemain: Duration; timeRemainKnown: boolean; las
  */
 adapterDescription?: string | null; 
 /**
- * Rated wattage the adapter reports, as opposed to the wattage currently
- * being drawn. A gap between the two explains slow charging.
- */
-adapterRatedWatts?: number; 
-/**
  * Negotiated USB-C PD power tier.
  */
 adapterPowerTier?: number; adapterIsWireless?: boolean; cycleCount: number; currentCapacity: number; maxCapacity: number; designCapacity?: number }

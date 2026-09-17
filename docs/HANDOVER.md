@@ -170,15 +170,37 @@ git merge upstream/main --allow-unrelated-histories
 
 **dmg 步骤本地失败，非代码问题**：`create-dmg` 的 AppleScript 在设置 Finder 窗口外观时超时（`AppleEvent 已超时 -1712`），`.app` 在此之前已正常生成。CI 用 GitHub 托管 runner，一般不触发此问题；若发生可考虑仅打 `app` target 或加 Finder 自动化授权。
 
-## 七、待办
+## 七、状态栏面板修复（已提交 `badc732`、`6d784c0`）
+
+面板一度完全打不开，查出三个叠加的缺陷，都来自上游：
+
+**左键无 `Click` 事件。** 加日志观察托盘事件流，只有 `Enter`/`Move`/`Leave`，`Click` 一个都没有。根因是 tray-icon 建图标时调用了 `NSStatusItem.setMenu`——macOS 上一旦设了 menu，AppKit 就自己处理 button 点击，`mouseDown:` 到不了 tray-icon 依赖的 `TrayTarget` subview。`menu_on_left_click(false)` 只改 tray-icon 内部的 ivar，动不了 AppKit 这层；build 后再调 `set_show_menu_on_left_click` 能让菜单不弹，但 `Click` 依然为零。解法是建图标时不挂 menu，右键按下时临时挂上。
+
+**右键菜单不弹。** 仅 `set_menu` 不够，AppKit 对该次按下的处理方式已确定。需挂上后主动 `performClick`。该调用阻塞至菜单关闭，因此对应的 mouse-up 可能永不到达，卸载菜单必须放在 `performClick` 返回之后而非 mouse-up 分支。
+
+**面板只有骨架。** `usePower` 把 `document.visibilityState === 'hidden'` 当作加载中，而 popover 窗口配置为 `visible: false`，可见性状态恒为 hidden。数据一直在推送，仅渲染被挡。
+
+**面板被全屏应用压住。** `tauri.conf.json` 的 `alwaysOnTop` 对此无效——`to_popover()` 把 contentView 移入 `NSViewController`，实际显示的是 NSPopover 自己的窗口。需在 `show_popover()` 后取 `contentViewController.view.window`，设 `NSPopUpMenuWindowLevel`（101）与 `CanJoinAllSpaces | FullScreenAuxiliary`。
+
+## 八、新增功能（已提交）
+
+**电池健康趋势。** 新表 `battery_health_snapshots`，每日一行 upsert，常年开机一年 365 行。存原始 mAh 而非算好的百分比，便于将来改健康度公式而不失效历史。已实测：拿含 1 条充电历史的现有库升级，旧数据完整保留，新迁移叠加在已有 3 个之上。
+
+**应用耗电排行。** 用 `top -stats power` 读取，与活动监视器同一指标，无需特权 helper（`powermetrics` 要 root，牵扯 `SMJobBless` 与签名，不值得）。按需触发而非轮询：`top` 需采样两次才有能耗差值，一次约 1.5 秒，挂定时器上耗电比省的多。
+
+**适配器详情。** `AdapterDetails` 里 `Description`、`AdapterPowerTier`、`MaxVoltage`、`MaxCurrent` 一直未读。注意区分：`adapter_watts`/`adapter_voltage`/`adapter_amperage` 全是**额定值**（85W 充电器上恒为 85W/20V/4.25A），实际功率是 SMC 的 `adapter_power`。曾误加 `adapter_rated_watts` 字段读同一个 `Watts`，属重复，已删除。信息做成徽章的 tooltip，不额外占纵向空间。
+
+## 九、待办
 
 1. Intel Mac 支持（issue #18、#20）——优先级高于跨平台，SMC key 在 Intel 机型上部分不同，用户就在 macOS 生态内。
 2. 采纳 PR #11（iOS 设备指标）与 PR #16（繁体中文），两者是干净增量。
-3. 图标与品牌视觉：当前仍是上游图标，需要替换为 Trickle 自有设计。
+3. `Info.plist` 的 `LSMinimumSystemVersion` 是 Tauri 默认的 10.13，与实际依赖（objc2-app-kit、NSPopover、IOKit 电源接口）不符，需实测确定真实下限后修正。
 4. 发布方式：自签名分发 dmg 需 Apple Developer 账号（99 USD/年），否则用户需手动绕过 Gatekeeper（上游 issue #1 即此问题）。Homebrew tap 需自建 `homebrew-trickle` 仓库。
 5. 上游遗留的 20 个 `extern` ABI 弃用 warning 可在后续清理中统一加 `extern "C"`。
+6. 可考虑的后续功能：充电上限限制（需特权 helper 写 SMC `CHWA`/`BCLM`，是唯一能真正延长电池寿命的功能）、低电量/满电/高温通知、周期性快照对比。
+7. 图标是脚本生成的（`scripts/generate_icon.py`），几何可复现但缺少设计质感——液滴轮廓是数学曲线而非调过的贝塞尔，闪电转角是硬的，整体无内阴影/高光层次。若要提升观感需设计师出 SVG 后覆盖 `app-icon.png` 并重跑 `pnpm tauri icon`。
 
-## 八、环境记录
+## 十、环境记录
 
 ```
 macOS 27.0 (26A428) / arm64
