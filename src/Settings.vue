@@ -19,12 +19,9 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { open } from '@tauri-apps/plugin-shell'
-import { check } from '@tauri-apps/plugin-updater'
-import { relaunch } from '@tauri-apps/plugin-process'
 import { Activity, BadgeInfo, BatteryCharging, CircleDashed, ExternalLink, Eye, Gauge, Languages, Moon, Palette, RotateCw, Sun, SunMoon, Wallet } from 'lucide-vue-next'
 import { storeToRefs } from 'pinia'
-import { computed, h, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { h, ref, watch } from 'vue'
 import { version } from '../package.json'
 import { events } from './bindings'
 import { Skeleton } from './components/ui/skeleton'
@@ -32,71 +29,11 @@ import { usePreference } from './stores/preference'
 
 const commitHash = __COMMIT_HASH__
 
-const { t } = useI18n()
-
-type UpdateState = 'idle' | 'checking' | 'available' | 'downloading' | 'none' | 'error'
-const updateState = ref<UpdateState>('idle')
-const updateVersion = ref('')
-
-const updateLabel = computed(() => {
-  switch (updateState.value) {
-    case 'checking': return t('update.checking')
-    case 'available': return t('update.install', { version: updateVersion.value })
-    case 'downloading': return t('update.downloading')
-    case 'none': return t('update.up_to_date')
-    case 'error': return t('update.failed')
-    default: return t('update.check')
-  }
-})
-
-/**
- * Checks for an update, then installs it on a second click.
- *
- * The two phases share one button because the dialog the updater plugin shows
- * is disabled here — driving it from the settings window keeps the state
- * visible next to the version number instead of interrupting with a modal.
- */
-async function checkForUpdate() {
-  if (updateState.value === 'available') {
-    await installUpdate()
-    return
-  }
-
-  updateState.value = 'checking'
-  try {
-    const update = await check()
-    if (update) {
-      updateVersion.value = update.version
-      updateState.value = 'available'
-      pendingUpdate = update
-    }
-    else {
-      updateState.value = 'none'
-    }
-  }
-  catch (error) {
-    console.error('[updater] check failed', error)
-    updateState.value = 'error'
-  }
-}
-
-let pendingUpdate: Awaited<ReturnType<typeof check>> = null
-
-async function installUpdate() {
-  if (!pendingUpdate) {
-    return
-  }
-  updateState.value = 'downloading'
-  try {
-    await pendingUpdate.downloadAndInstall()
-    // The new binary only takes effect after a restart.
-    await relaunch()
-  }
-  catch (error) {
-    console.error('[updater] install failed', error)
-    updateState.value = 'error'
-  }
-}
+const {
+  label: updateLabel,
+  busy: updateBusy,
+  activate: activateUpdate,
+} = useUpdater()
 
 useSetup()
 
@@ -284,6 +221,18 @@ function SettingsSection(props: SettingsSectionProps) {
       </SettingsItem>
 
       <SettingsItem
+        :name="$t('settings.auto_check_updates')"
+        :description="$t('settings.auto_check_updates_desc')"
+        :icon="RotateCw"
+      >
+        <Switch
+          id="auto-check-updates"
+          v-model="preference.autoCheckUpdates"
+          class="data-[state=checked]:bg-blue-500"
+        />
+      </SettingsItem>
+
+      <SettingsItem
         :name="$t('settings.status_bar')"
         :description="$t('settings.status_bar_desc')"
         :icon="BadgeInfo"
@@ -356,8 +305,8 @@ function SettingsSection(props: SettingsSectionProps) {
           {{ version }}
           <button
             class="text-xs text-muted-foreground underline cursor-pointer disabled:opacity-50 disabled:cursor-default"
-            :disabled="updateState === 'checking' || updateState === 'downloading'"
-            @click="checkForUpdate"
+            :disabled="updateBusy"
+            @click="activateUpdate"
           >
             {{ updateLabel }}
           </button>

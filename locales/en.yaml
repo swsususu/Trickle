@@ -39,6 +39,8 @@ flow:
   adapter_power: Adapter Power
 
 settings:
+  auto_check_updates: Check for Updates on Launch
+  auto_check_updates_desc: Notify when a new version is available
   appearance: Appearance
   theme: Theme
   theme_light: Light

@@ -36,6 +36,8 @@ flow:
   power_loss: 损耗
   adapter_power: 适配器功率
 settings:
+  auto_check_updates: 启动时检查更新
+  auto_check_updates_desc: 有新版本时通知
   appearance: 外观
   theme: 主题
   theme_desc: 更改应用程序的主题
