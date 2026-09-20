@@ -10,12 +10,12 @@ cask "trickle" do
   desc "Menu bar power monitor for battery health, power flow and charging"
   homepage "https://github.com/swsususu/Trickle"
 
-  # Only macOS is relevant: the app reads IOKit power data and talks to the SMC.
-  # Cask::DSL::DependsOn#macos= parses this with comparator ">=", so the bare
-  # symbol already means "Ventura or newer". The floor is a conservative guess,
-  # not a tested one — Trickle is verified on macOS 26 and 27. Adjust it once
-  # older versions have actually been run.
-  depends_on macos: :ventura
+  # Declares the platform without asserting a version floor. Pinning one broke
+  # installs on macOS 26 with "does not run on macOS versions other than
+  # Ventura": older Homebrew releases mis-handle the comparison when their
+  # version table predates the running system. The floor was a guess anyway, as
+  # Trickle has only been run on macOS 26 and 27.
+  depends_on macos: :any
 
   app "Trickle.app"
 
