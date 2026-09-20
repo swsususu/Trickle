@@ -1,4 +1,5 @@
 import type { Update } from '@tauri-apps/plugin-updater'
+import { error as logError, info as logInfo, warn as logWarn } from '@tauri-apps/plugin-log'
 import {
   isPermissionGranted,
   requestPermission,
@@ -40,15 +41,15 @@ async function notifyAvailable(version: string) {
         title: 'Trickle',
         body: `Version ${version} is available. Open Settings to install it.`,
       })
-      console.info('[updater] notification sent')
+      logInfo('[updater] notification sent')
     }
     else {
-      console.warn('[updater] notification permission denied')
+      logWarn('[updater] notification permission denied')
     }
   }
   catch (error) {
     // A missing notification must not make the update itself look failed.
-    console.error('[updater] notification failed', error)
+    logError(`[updater] notification failed: ${error}`)
   }
 }
 
@@ -71,7 +72,7 @@ async function checkForUpdate(silent = false): Promise<void> {
       pending = update
       availableVersion.value = update.version
       state.value = 'available'
-      console.info(`[updater] ${update.version} available`)
+      logInfo(`[updater] ${update.version} available`)
       if (silent) {
         await notifyAvailable(update.version)
       }
@@ -79,12 +80,12 @@ async function checkForUpdate(silent = false): Promise<void> {
     else {
       // Logged so a launch check that found nothing is distinguishable from
       // one that never ran.
-      console.info('[updater] no update available')
+      logInfo('[updater] no update available')
       state.value = silent ? 'idle' : 'none'
     }
   }
   catch (error) {
-    console.error('[updater] check failed', error)
+    logError(`[updater] check failed: ${error}`)
     state.value = silent ? 'idle' : 'error'
   }
 }
@@ -101,7 +102,7 @@ async function installUpdate(): Promise<void> {
     await relaunch()
   }
   catch (error) {
-    console.error('[updater] install failed', error)
+    logError(`[updater] install failed: ${error}`)
     state.value = 'error'
   }
 }
