@@ -2,8 +2,8 @@ cask "trickle" do
   # Update both on every release. Get the checksum from the published asset:
   #   shasum -a 256 Trickle_<version>_universal.dmg
   # `:no_check` would avoid this step but silently accepts a tampered download.
-  version "0.0.1"
-  sha256 "a456408d28d246aedd137b6ed6093c9723e22673281656c1bc1543cdf1bd4b43"
+  version "0.0.3"
+  sha256 "4fb6243caca1cbb31f91a53152aa3029649a840256347dbc91edb428a43c01eb"
 
   url "https://github.com/swsususu/Trickle/releases/download/v#{version}/Trickle_#{version}_universal.dmg"
   name "Trickle"
@@ -11,9 +11,10 @@ cask "trickle" do
   homepage "https://github.com/swsususu/Trickle"
 
   # Only macOS is relevant: the app reads IOKit power data and talks to the SMC.
-  # This form already means "Ventura or newer". The floor is a conservative
-  # guess, not a tested one — Trickle is verified on macOS 27 only. Adjust it
-  # once older versions have actually been run.
+  # Cask::DSL::DependsOn#macos= parses this with comparator ">=", so the bare
+  # symbol already means "Ventura or newer". The floor is a conservative guess,
+  # not a tested one — Trickle is verified on macOS 26 and 27. Adjust it once
+  # older versions have actually been run.
   depends_on macos: :ventura
 
   app "Trickle.app"
