@@ -10,12 +10,11 @@ cask "trickle" do
   desc "Menu bar power monitor for battery health, power flow and charging"
   homepage "https://github.com/swsususu/Trickle"
 
-  # Declares the platform without asserting a version floor. Pinning one broke
-  # installs on macOS 26 with "does not run on macOS versions other than
-  # Ventura": older Homebrew releases mis-handle the comparison when their
-  # version table predates the running system. The floor was a guess anyway, as
-  # Trickle has only been run on macOS 26 and 27.
-  depends_on macos: :any
+  # No `depends_on macos`: a cask only ever installs on macOS, so the stanza is
+  # only for asserting a version floor, and Trickle has no tested one. Do not
+  # reintroduce `macos: :any`: Homebrew only accepts version symbols such as
+  # :tahoe or :sequoia, so :any raises MacOSVersion::Error and invalidates the
+  # whole cask ("definition is invalid") for everyone installing it.
 
   app "Trickle.app"
 
