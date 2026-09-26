@@ -179,9 +179,12 @@ const gridClass = computed(() => ({
             color="#10b981"
             second-color="#f59e0b"
           />
-          <p v-if="data" class="text-xs text-muted-foreground mt-1 font-mono">
-            {{ $t('system.since_boot') }} ↓ {{ formatBytes(data.network.totalDown) }} ↑ {{ formatBytes(data.network.totalUp) }}
-          </p>
+          <!-- One line even at 230px: the label moves into a tooltip. -->
+          <CommonTooltip v-if="data" :content="$t('system.since_boot')" as-child>
+            <p class="text-xs text-muted-foreground mt-1 font-mono whitespace-nowrap overflow-hidden text-ellipsis">
+              Σ ↓{{ formatBytes(data.network.totalDown) }} ↑{{ formatBytes(data.network.totalUp) }}
+            </p>
+          </CommonTooltip>
         </CardContent>
       </Card>
     </div>

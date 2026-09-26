@@ -11,6 +11,10 @@ Trickle 基于 [lzt1008/powerflow](https://github.com/lzt1008/powerflow) 二次�
 
 ![Trickle](docs/images/screenshot.png)
 
+| 系统负载 | 菜单栏面板 | 状态栏样式 |
+|---|---|---|
+| ![系统负载](docs/images/system-load.png) | ![菜单栏面板](docs/images/popover.png) | ![状态栏样式](docs/images/statusbar.png) |
+
 > 尚未发布正式版本。目前没有签名构建，本地构建的应用首次打开需要绕过
 > Gatekeeper（见 [安装](#安装)）。
 
@@ -46,8 +50,9 @@ Trickle 基于 [lzt1008/powerflow](https://github.com/lzt1008/powerflow) 二次�
 - **负载 × 功耗** — 系统功率与负载叠在同一张图上，回答「这 20W 到底花在哪」
 - **应用耗电排行** — 与活动监视器同一能耗指标，新增同一次采样得到的 CPU 与内存列。
   仍为按需测量，因为一次采样约需一秒。
-- **菜单栏** — 面板底部一行迷你指标；状态栏标题可选附加 `+ CPU`、`+ 网速`
-  或 `+ CPU/GPU/内存`
+- **菜单栏** — 面板底部一行迷你指标；状态栏可在功率后附加双行小字：`+ CPU`、
+  `+ 网速` 或 `+ CPU/GPU/内存`。原生绘制、数字等宽，读数变化时图标宽度不跳动，
+  浅色、深色菜单栏与高亮状态由系统自动着色。
 
 所有系统数据均来自内核计数器（`host_processor_info`、`host_statistics64`、
 IORegistry `IOAccelerator`、`net.link.generic` MIB），无需 root、无需特权 helper，
