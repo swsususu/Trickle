@@ -19,7 +19,8 @@ use tpower::{
 use crate::{
     database::save_battery_health_snapshot,
     event::{PowerUpdatedEvent, PreferenceEvent, StatusBarItem, WindowLoadedEvent},
-    system::{status_bar_suffix, StatusBarSystem, SystemMonitor, SystemTickEvent},
+    system::{status_bar_stacks, StatusBarSystem, SystemMonitor, SystemTickEvent},
+    tray_render::TrayLabel,
 };
 
 pub enum SenderMessage {
@@ -74,7 +75,7 @@ pub fn status_bar_text(
 
 impl PowerUpdatedEvent {
     pub fn new(value: f32) -> Self {
-        Self(format!("{:.1} w", value))
+        Self(TrayLabel::power(value))
     }
 
     pub fn new_with(
@@ -149,10 +150,10 @@ fn emit_power_sample<R: Runtime>(
             log::error!("Failed to emit SystemTickEvent: {error}");
         }
     }
-    let suffix = status_bar_suffix(system.status_bar, stats.as_ref());
-    let title = |event: PowerUpdatedEvent| match &suffix {
-        Some(extra) => PowerUpdatedEvent(format!("{}  {extra}", event.0)),
-        None => event,
+    let stacks = status_bar_stacks(system.status_bar, stats.as_ref());
+    let title = |mut event: PowerUpdatedEvent| {
+        event.0.stacks = stacks.clone();
+        event
     };
 
     if smc_conn.is_none() && Instant::now() >= *next_smc_retry {

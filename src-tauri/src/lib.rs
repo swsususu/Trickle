@@ -30,6 +30,7 @@ mod menu;
 mod process_energy;
 mod system;
 mod tray_icon;
+mod tray_render;
 mod util;
 
 #[tauri::command]

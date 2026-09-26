@@ -6413,6 +6413,7 @@ name = "trickle"
 version = "0.0.5"
 dependencies = [
  "bincode",
+ "block2 0.5.1",
  "chrono",
  "cocoa 0.26.0",
  "derive_more 1.0.0",
