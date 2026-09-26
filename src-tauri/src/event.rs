@@ -71,6 +71,8 @@ pub enum PreferenceEvent {
     Language(String),
     StatusBarItem(StatusBarItem),
     StatusBarShowCharging(bool),
+    SystemMonitorEnabled(bool),
+    StatusBarSystem(crate::system::StatusBarSystem),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Event, Type)]

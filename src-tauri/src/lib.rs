@@ -28,6 +28,7 @@ mod history;
 mod local;
 mod menu;
 mod process_energy;
+mod system;
 mod tray_icon;
 mod util;
 
@@ -131,6 +132,35 @@ async fn get_battery_health_history(
         .map_err(|e| e.to_string())
 }
 
+/// Resize the status bar panel to fit its content.
+///
+/// The panel is an `NSPopover` whose size is fixed from the window frame when
+/// it is created, so the web view cannot grow it by itself. The web view
+/// measures its content and asks for the height it needs; the width is kept.
+#[tauri::command]
+#[specta::specta]
+fn set_popover_height(height: f64, app: AppHandle) {
+    use tauri_plugin_nspopover::AppExt;
+    let height = height.clamp(120.0, 600.0);
+    let handle = app.clone();
+    let _ = app.run_on_main_thread(move || {
+        // `ns_popover` unwraps plugin state that `to_popover` fills in during
+        // setup; without a popover window that never happened.
+        if handle.popover_window().is_none() {
+            return;
+        }
+        let popover = handle.ns_popover();
+        unsafe {
+            let size = popover.contentSize();
+            if (size.height - height).abs() >= 1.0 {
+                // Only the popover's size matters: `to_popover` moved the web
+                // view out of the Tauri window, so resizing that does nothing.
+                popover.setContentSize(objc2_foundation::NSSize::new(size.width, height));
+            }
+        }
+    });
+}
+
 /// Top energy-consuming processes. Takes ~1.5s because `top` needs two
 /// samples, so the frontend should call this on demand, not on a timer.
 #[tauri::command]
@@ -152,6 +182,7 @@ pub fn create_specta() -> tauri_specta::Builder {
             get_all_charging_history,
             get_battery_health_history,
             get_process_energy,
+            set_popover_height,
             delete_history_by_id
         ])
         .events(collect_events![
@@ -162,6 +193,7 @@ pub fn create_specta() -> tauri_specta::Builder {
             PowerUpdatedEvent,
             WindowLoadedEvent,
             HistoryRecordedEvent,
+            system::SystemTickEvent,
         ]);
 
     #[cfg(debug_assertions)]

@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Trickle · 系统负载 界面原型</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* 与 src/assets/index.css 的 shadcn neutral 主题保持一致 */
+:root{
+  --background:0 0% 100%;--foreground:0 0% 3.9%;--card:0 0% 100%;--muted:0 0% 96.1%;
+  --muted-foreground:0 0% 45.1%;--border:0 0% 89.8%;--secondary-foreground:0 0% 9%;
+  --radius:.5rem;
+  --blue:#3b82f6;--cyan:#06b6d4;--indigo:#6366f1;--violet:#8b5cf6;--amber:#f59e0b;--green:#22c55e;--red:#ef4444;--emerald:#10b981;
+}
+:root.dark{
+  --background:0 0% 3.9%;--foreground:0 0% 98%;--card:0 0% 3.9%;--muted:0 0% 14.9%;
+  --muted-foreground:0 0% 63.9%;--border:0 0% 14.9%;--secondary-foreground:0 0% 98%;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'SF Compact','SF Pro Text',-apple-system,'Helvetica Neue',sans-serif;-webkit-font-smoothing:antialiased;
+  background:hsl(var(--muted));color:hsl(var(--foreground));padding:24px;font-size:14px}
+.mono{font-family:ui-monospace,'SF Mono',Menlo,monospace}
+.muted{color:hsl(var(--muted-foreground))}
+h1{font-size:20px;font-weight:700}
+h2{font-size:15px;font-weight:600;margin:28px 0 10px}
+.note{font-size:12px;line-height:1.7;color:hsl(var(--muted-foreground));max-width:980px}
+.note b{color:hsl(var(--foreground));font-weight:600}
+.toolbar{display:flex;gap:8px;align-items:center;margin:12px 0 0;flex-wrap:wrap}
+.btn{border:1px solid hsl(var(--border));background:hsl(var(--background));color:inherit;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer}
+.btn.on{background:hsl(var(--foreground));color:hsl(var(--background))}
+
+/* ---------- 窗口外壳 ---------- */
+.window{width:1000px;border-radius:12px;background:hsl(var(--background));box-shadow:0 20px 50px rgba(0,0,0,.18),0 0 0 1px rgba(0,0,0,.08);overflow:hidden}
+.titlebar{height:52px;display:flex;align-items:center;justify-content:space-between;padding:8px 16px 0 16px}
+.lights{display:flex;gap:8px;width:80px}.lights i{width:12px;height:12px;border-radius:50%;display:block}
+.tabs{display:flex;align-items:center;gap:12px}
+.tabslist{background:hsl(var(--muted));border-radius:6px;padding:3px;display:flex}
+.tabslist span{padding:4px 12px;border-radius:4px;font-size:12px}
+.tabslist span.active{background:hsl(var(--background));box-shadow:0 1px 2px rgba(0,0,0,.08);color:var(--blue)}
+.icons{display:flex;gap:6px}.icons span{padding:6px;border-radius:6px;color:hsl(var(--muted-foreground))}
+.content{padding:8px 16px 16px;display:flex;flex-direction:column;gap:16px}
+
+.card{border:1px solid hsl(var(--border));border-radius:calc(var(--radius) + 4px);background:hsl(var(--card));box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.card-h{padding:16px 16px 8px;display:flex;justify-content:space-between;align-items:center}
+.card-t{font-size:14px;font-weight:600}
+.card-c{padding:0 16px 16px}
+.row{display:flex;gap:16px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.placeholder{height:120px;border-radius:8px;border:1px dashed hsl(var(--border));display:flex;align-items:center;justify-content:center;font-size:12px;color:hsl(var(--muted-foreground));background:hsl(var(--muted)/.4)}
+.big{font-size:24px;font-weight:700;line-height:1.1}
+.unit{font-size:13px;font-weight:600;margin-left:2px;color:hsl(var(--muted-foreground))}
+.sub{font-size:11px;color:hsl(var(--muted-foreground));margin-top:4px}
+.section-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:-4px}
+.section-head .t{font-size:13px;font-weight:600;color:hsl(var(--muted-foreground))}
+.chip{font-size:10px;padding:1px 6px;border-radius:999px;border:1px solid hsl(var(--border));color:hsl(var(--muted-foreground))}
+
+/* 分段条 */
+.bar{height:6px;border-radius:3px;background:hsl(var(--muted));overflow:hidden;display:flex;margin-top:10px}
+.bar i{display:block;height:100%;transition:width .6s}
+.cores{display:flex;gap:2px;margin-top:10px;height:22px;align-items:flex-end}
+.cores i{flex:1;background:hsl(var(--muted));border-radius:2px;position:relative;height:100%;overflow:hidden}
+.cores i b{position:absolute;left:0;right:0;bottom:0;transition:height .6s}
+.cores .gap{flex:0 0 4px;background:none}
+.legend{display:flex;gap:10px;margin-top:8px;font-size:10px;color:hsl(var(--muted-foreground));flex-wrap:wrap}
+.legend span::before{content:'';display:inline-block;width:6px;height:6px;border-radius:2px;margin-right:4px;background:var(--c)}
+.spark{width:100%;height:36px;margin-top:8px;display:block}
+.pressure{font-size:10px;font-weight:600;padding:1px 6px;border-radius:999px}
+
+/* 联动图 */
+.chart{width:100%;height:170px;display:block}
+.chart-legend{display:flex;gap:14px;font-size:11px;color:hsl(var(--muted-foreground))}
+.chart-legend label{display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none}
+.chart-legend input{accent-color:var(--blue)}
+
+/* 耗电排行扩展 */
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{font-weight:500;text-align:right;color:hsl(var(--muted-foreground));padding:6px 4px;font-size:11px;border-bottom:1px solid hsl(var(--border))}
+th:first-child,td:first-child{text-align:left}
+td{padding:6px 4px;text-align:right;border-bottom:1px solid hsl(var(--border)/.6)}
+th.sort{color:hsl(var(--foreground))}
+
+/* ---------- 菜单栏 + popover ---------- */
+.stage{display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap}
+.menubar{width:352px;height:26px;border-radius:6px;background:rgba(240,240,240,.85);display:flex;justify-content:flex-end;align-items:center;gap:14px;padding:0 10px;font-size:12px;color:#111;box-shadow:0 0 0 1px rgba(0,0,0,.06)}
+.dark .menubar{background:rgba(40,40,40,.9);color:#eee}
+.tray{padding:1px 6px;border-radius:4px;background:rgba(0,0,0,.1);display:flex;gap:6px;align-items:center}
+.dark .tray{background:rgba(255,255,255,.15)}
+.tray .stack{display:flex;flex-direction:column;line-height:9px;font-size:8.5px;font-weight:600}
+.popover{width:352px;border-radius:12px;margin-top:8px;background:hsl(var(--background)/.92);backdrop-filter:blur(20px);box-shadow:0 12px 32px rgba(0,0,0,.2),0 0 0 1px rgba(0,0,0,.08);padding:14px 16px 12px}
+.pop-title{display:flex;justify-content:space-between;font-weight:600;font-size:15px}
+.pop-desc{font-size:10px;margin-top:2px}
+.pop-num{font-size:34px;font-weight:700;margin-top:8px}
+.pop-batt{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+.pop-sep{height:1px;background:hsl(var(--border));margin:12px -16px 10px}
+.mini{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.mini>div{border-radius:8px;background:hsl(var(--muted)/.6);padding:6px 8px}
+.mini .k{font-size:10px;color:hsl(var(--muted-foreground));display:flex;justify-content:space-between}
+.mini .v{font-size:14px;font-weight:700;margin-top:1px}
+.mini .v small{font-size:10px;font-weight:600;color:hsl(var(--muted-foreground))}
+.mini .m{height:3px;border-radius:2px;background:hsl(var(--border));margin-top:5px;overflow:hidden}
+.mini .m i{display:block;height:100%;transition:width .6s}
+.mini.net .v{font-size:11px;line-height:14px}
+
+.caption{font-size:11px;color:hsl(var(--muted-foreground));margin-top:8px;width:352px;line-height:1.6}
+
+/* 设置 */
+.settings{width:520px;border-radius:12px;background:hsl(var(--background));box-shadow:0 0 0 1px hsl(var(--border));padding:16px 20px}
+.set-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid hsl(var(--border))}
+.set-row:last-child{border:none}
+.set-row .l{font-size:13px}.set-row .d{font-size:11px;color:hsl(var(--muted-foreground));margin-top:2px}
+.switch{width:32px;height:18px;border-radius:9px;background:hsl(var(--border));position:relative;cursor:pointer;flex-shrink:0;transition:background .2s}
+.switch::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.switch.on{background:var(--blue)}.switch.on::after{left:16px}
+select{font-size:12px;padding:3px 6px;border-radius:6px;border:1px solid hsl(var(--border));background:hsl(var(--background));color:inherit}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<h1>Trickle · 系统负载模块 界面原型</h1>
+<p class="note" style="margin-top:6px">
+  数据为模拟随机游走，每 1.5 秒刷新（与现有 <span class="mono">updateInterval</span> 默认值一致）。视觉沿用项目的 shadcn neutral 主题、卡片与蓝色系配色。
+  核心思路：<b>不做第二个 Stats，而是让负载数据为「功耗」服务</b>，所以关键设计是负载与功率同轴对比，以及耗电排行里加上 CPU/内存列。
+</p>
+<div class="toolbar">
+  <button class="btn" id="themeBtn">切换深色 / 浅色</button>
+  <button class="btn" id="pauseBtn">暂停数据</button>
+  <span class="muted" style="font-size:12px;margin-left:8px">场景：</span>
+  <button class="btn on" data-scene="idle">轻负载</button>
+  <button class="btn" data-scene="build">编译中</button>
+  <button class="btn" data-scene="game">GPU 渲染</button>
+  <button class="btn" data-scene="download">大文件下载</button>
+</div>
+
+<!-- ================= 1. 主窗口 ================= -->
+<h2>① 主窗口：在「技术细节」下方新增「系统负载」区块</h2>
+<div class="window">
+  <div class="titlebar">
+    <div class="lights"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></div>
+    <div class="tabs" style="flex:1;margin-left:16px">
+      <div class="tabslist"><span class="active">💻</span><span class="muted">📱</span></div>
+      <div><div style="font-weight:700;font-size:13px" class="mono">MacBook Pro</div><div class="muted mono" style="font-size:10px">Local</div></div>
+    </div>
+    <div class="icons"><span>🕘</span><span>⚙︎</span></div>
+  </div>
+
+  <div class="content">
+    <div class="row">
+      <div class="card" style="min-width:320px"><div class="card-h"><span class="card-t">电池供电</span></div><div class="card-c"><div class="placeholder">现有 PowerStatus（不变）</div></div></div>
+      <div class="card" style="flex:1"><div class="card-h"><span class="card-t">功率流</span></div><div class="card-c"><div class="placeholder">现有 PowerFlow（不变）</div></div></div>
+    </div>
+    <div class="card"><div class="card-c" style="padding-top:16px"><div class="placeholder" style="height:60px">现有 PowerUsageChart + TechnicalDetail（温度 / 健康 / 循环 / 容量，不变）</div></div></div>
+
+    <!-- 新增区块 -->
+    <div class="section-head">
+      <span class="t">系统负载</span>
+      <span class="chip">新增</span>
+    </div>
+    <div class="grid4">
+      <!-- CPU -->
+      <div class="card">
+        <div class="card-h" style="padding-bottom:4px"><span class="card-t" style="font-size:13px">CPU</span><span class="muted mono" style="font-size:11px" id="cpuPw">— W</span></div>
+        <div class="card-c">
+          <div><span class="big mono" id="cpuVal">0</span><span class="unit">%</span></div>
+          <div class="cores" id="cores"></div>
+          <div class="legend"><span style="--c:var(--blue)">性能核 8</span><span style="--c:var(--cyan)">能效核 4</span></div>
+        </div>
+      </div>
+      <!-- GPU -->
+      <div class="card">
+        <div class="card-h" style="padding-bottom:4px"><span class="card-t" style="font-size:13px">GPU</span><span class="muted mono" style="font-size:11px" id="gpuPw">— W</span></div>
+        <div class="card-c">
+          <div><span class="big mono" id="gpuVal">0</span><span class="unit">%</span></div>
+          <svg class="spark" id="gpuSpark" viewBox="0 0 100 36" preserveAspectRatio="none"></svg>
+          <div class="sub mono" id="gpuMem">显存占用 — GB</div>
+        </div>
+      </div>
+      <!-- 内存 -->
+      <div class="card">
+        <div class="card-h" style="padding-bottom:4px"><span class="card-t" style="font-size:13px">内存</span><span class="pressure" id="pressure">正常</span></div>
+        <div class="card-c">
+          <div><span class="big mono" id="memVal">0</span><span class="unit">/ 24 GB</span></div>
+          <div class="bar" id="memBar"><i style="background:var(--blue)"></i><i style="background:var(--indigo)"></i><i style="background:var(--violet)"></i></div>
+          <div class="legend"><span style="--c:var(--blue)">App</span><span style="--c:var(--indigo)">联动</span><span style="--c:var(--violet)">压缩</span><span class="mono" id="swap">交换 0 MB</span></div>
+        </div>
+      </div>
+      <!-- 网络 -->
+      <div class="card">
+        <div class="card-h" style="padding-bottom:4px"><span class="card-t" style="font-size:13px">网络</span><span class="muted mono" style="font-size:11px">Wi-Fi · en0</span></div>
+        <div class="card-c">
+          <div class="mono" style="display:flex;gap:14px">
+            <div><span style="color:var(--emerald);font-weight:700">↓</span> <span class="big" style="font-size:18px" id="dnVal">0</span><span class="unit" id="dnU">KB/s</span></div>
+            <div><span style="color:var(--amber);font-weight:700">↑</span> <span class="big" style="font-size:18px" id="upVal">0</span><span class="unit" id="upU">KB/s</span></div>
+          </div>
+          <svg class="spark" id="netSpark" viewBox="0 0 100 36" preserveAspectRatio="none"></svg>
+          <div class="sub mono" id="netTotal">本次开机 ↓ — ↑ —</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 联动图：差异化核心 -->
+    <div class="card">
+      <div class="card-h">
+        <div><div class="card-t">负载 × 功耗</div><div class="sub" style="margin-top:2px">左轴：系统功率 W（面积）　右轴：占用率 %（折线）。用来回答「这 20W 到底花在哪」。</div></div>
+        <div class="chart-legend" id="series">
+          <label><input type="checkbox" data-k="cpu" checked><span style="color:var(--blue)">CPU</span></label>
+          <label><input type="checkbox" data-k="gpu" checked><span style="color:var(--violet)">GPU</span></label>
+          <label><input type="checkbox" data-k="mem"><span style="color:var(--indigo)">内存</span></label>
+          <label><input type="checkbox" data-k="net"><span style="color:var(--emerald)">网络</span></label>
+        </div>
+      </div>
+      <div class="card-c"><svg class="chart" id="chart" viewBox="0 0 960 170" preserveAspectRatio="none"></svg></div>
+    </div>
+
+    <!-- 耗电排行扩展 -->
+    <div class="card">
+      <div class="card-h"><div><div class="card-t">应用耗电排行</div><div class="sub" style="margin-top:2px">在现有「能耗」列旁增加 CPU / 内存列，同一次 <span class="mono">top</span> 采样即可拿到，不增加开销。</div></div><span class="btn">重新测量</span></div>
+      <div class="card-c">
+        <table><thead><tr><th>应用</th><th class="sort">能耗 ↓</th><th>CPU</th><th>内存</th></tr></thead><tbody id="procs"></tbody></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 2. 菜单栏 + popover ================= -->
+<h2>② 菜单栏面板：底部加一条迷你指标（高度 224 → 约 300px）</h2>
+<div class="stage">
+  <div>
+    <div class="menubar"><span>🔋</span><span>Wi-Fi</span><div class="tray mono"><span>⚡</span><span id="trayW">12.3w</span></div><span>周六 10:11</span></div>
+    <div class="popover">
+      <div class="pop-title"><span>电池供电</span><span class="muted" style="font-size:12px">MacBook Pro</span></div>
+      <div class="pop-desc mono muted">屏幕 2.1w · 散热 4.3w · 其他 5.9w</div>
+      <div class="pop-num mono"><span id="popW">12.3</span>w</div>
+      <div class="pop-batt"><span style="font-weight:700;font-size:18px">🔋 78.40%</span><span class="muted" style="font-size:13px"><b>5 小时 12 分</b> 后耗尽</span></div>
+      <div class="bar" style="height:10px;border-radius:4px"><i style="width:42%;background:#1d4ed8"></i><i style="width:33%;background:#2563eb"></i><i style="width:25%;background:#3b82f6"></i></div>
+      <div class="pop-sep"></div>
+      <div class="mini" id="mini">
+        <div><div class="k"><span>CPU</span></div><div class="v mono" id="mCpu">0<small>%</small></div><div class="m"><i style="background:var(--blue)"></i></div></div>
+        <div><div class="k"><span>GPU</span></div><div class="v mono" id="mGpu">0<small>%</small></div><div class="m"><i style="background:var(--violet)"></i></div></div>
+        <div><div class="k"><span>内存</span><span id="mPress" style="width:6px;height:6px;border-radius:50%;margin-top:3px"></span></div><div class="v mono" id="mMem">0<small>%</small></div><div class="m"><i style="background:var(--indigo)"></i></div></div>
+        <div class="net"><div class="k"><span>网络</span></div><div class="v mono"><div id="mDn">↓ 0K</div><div id="mUp" class="muted">↑ 0K</div></div></div>
+      </div>
+    </div>
+    <p class="caption">迷你指标只做「一眼扫过」：数字 + 细进度条。内存右上角的小圆点代表内存压力（绿/黄/红），比百分比更有意义——macOS 上内存「用满」是常态。点击任意格子打开主窗口并滚动到对应卡片。</p>
+  </div>
+
+  <!-- 菜单栏显示样式 -->
+  <div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:10px">状态栏图标可选样式（扩展现有 statusBarItem 设置）</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="menubar" style="width:300px"><span class="muted" style="font-size:11px;margin-right:auto">仅功率（现状）</span><div class="tray mono"><span>⚡</span><span class="tw">12.3w</span></div></div>
+      <div class="menubar" style="width:300px"><span class="muted" style="font-size:11px;margin-right:auto">功率 + CPU</span><div class="tray mono"><span class="tw">12.3w</span><span style="opacity:.4">|</span><span class="tc">23%</span></div></div>
+      <div class="menubar" style="width:300px"><span class="muted" style="font-size:11px;margin-right:auto">功率 + 网速（双行）</span><div class="tray mono"><span class="tw">12.3w</span><div class="stack"><span class="td">↓1.2M</span><span class="tu">↑86K</span></div></div></div>
+      <div class="menubar" style="width:300px"><span class="muted" style="font-size:11px;margin-right:auto">紧凑四项（双行）</span><div class="tray mono"><div class="stack"><span>C <span class="tc">23%</span></span><span>G <span class="tg">8%</span></span></div><div class="stack"><span>M <span class="tm">61%</span></span><span class="td">↓1.2M</span></div></div></div>
+    </div>
+    <p class="caption" style="width:300px">建议默认保持「仅功率」，其余作为可选项，避免挤占菜单栏。</p>
+  </div>
+</div>
+
+<!-- ================= 3. 设置 ================= -->
+<h2>③ 设置页：新增「系统负载」分组</h2>
+<div class="settings">
+  <div class="set-row"><div><div class="l">显示系统负载</div><div class="d">总开关。关闭后不采集，不产生任何额外开销</div></div><div class="switch on"></div></div>
+  <div class="set-row"><div><div class="l">CPU</div><div class="d">显示性能核 / 能效核分布</div></div><div class="switch on"></div></div>
+  <div class="set-row"><div><div class="l">GPU</div></div><div class="switch on"></div></div>
+  <div class="set-row"><div><div class="l">内存</div><div class="d">以内存压力为主，占用率为辅</div></div><div class="switch on"></div></div>
+  <div class="set-row"><div><div class="l">网络</div><div class="d">统计接口</div></div><select><option>自动（主路由接口）</option><option>全部接口合计</option><option>en0 · Wi-Fi</option></select></div>
+  <div class="set-row"><div><div class="l">网速单位</div></div><select><option>字节 (MB/s)</option><option>比特 (Mbps)</option></select></div>
+  <div class="set-row"><div><div class="l">在菜单栏面板显示迷你指标</div></div><div class="switch on"></div></div>
+</div>
+
+<!-- ================= 调研结论 ================= -->
+<h2>附：数据源调研结论（已在本机 Mac16,8 / macOS 27 实测）</h2>
+<div class="note" style="background:hsl(var(--background));border:1px solid hsl(var(--border));border-radius:10px;padding:14px 18px">
+  <b>CPU</b>：<span class="mono">host_processor_info()</span> 读每核 tick 做差值；<span class="mono">hw.perflevel0/1.logicalcpu</span> 区分性能核 8 / 能效核 4。无需权限，项目已依赖 <span class="mono">mach</span> crate。<br>
+  <b>GPU</b>：IORegistry <span class="mono">IOAccelerator → PerformanceStatistics</span> 的 <span class="mono">Device Utilization %</span>、<span class="mono">In use system memory</span>，实测可读（当前 53%）。与现有 AppleSmartBattery 读取方式相同。<br>
+  <b>内存</b>：<span class="mono">host_statistics64(HOST_VM_INFO64)</span> 取 active / wired / compressed；<span class="mono">kern.memorystatus_vm_pressure_level</span> 取压力等级（1 正常 / 2 警告 / 4 严重），<span class="mono">vm.swapusage</span> 取交换。<br>
+  <b>网络</b>：<span class="mono">getifaddrs()</span> 的 <span class="mono">if_data.ifi_ibytes/obytes</span> 做差值，排除 <span class="mono">lo0</span>、<span class="mono">utun*</span>、<span class="mono">awdl*</span>、<span class="mono">bridge*</span>，避免 VPN 流量重复计数。<br>
+  <b>CPU / GPU 分项功率</b>：卡片右上角的 W 值在无 root 下只有 SMC 可拿，key 因芯片代际而异，需逐机型验证；拿不到时隐藏该字段而非显示 0。<br>
+  <b>开销</b>：以上全是内核计数器读取，单次 &lt;1ms，可直接挂在现有 power-tick 定时器上，不新增线程。主窗口成本主要在前端图表渲染，已知主窗口打开时约 19% CPU，新增卡片应复用现有动画开关。<br>
+  <b>定位提醒</b>：HANDOVER.md 第五节曾建议不做通用监控以免与 exelban/stats 正面竞争。本方案通过「负载 × 功耗」联动和耗电排行扩展，把新数据绑定在电源主题上，保持差异化。
+</div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const N=60;
+const scenes={
+  idle:    {cpu:12,gpu:6, mem:58,dn:120e3,up:30e3, pw:9},
+  build:   {cpu:82,gpu:10,mem:78,dn:300e3,up:80e3, pw:32},
+  game:    {cpu:45,gpu:88,mem:70,dn:200e3,up:60e3, pw:38},
+  download:{cpu:18,gpu:6, mem:62,dn:48e6, up:1.2e6,pw:13},
+};
+let scene='idle', paused=false;
+const st={cpu:12,gpu:6,mem:58,dn:120e3,up:30e3,pw:9,cores:Array(12).fill(10),totDn:3.2e9,totUp:4.1e8};
+const hist={cpu:[],gpu:[],mem:[],net:[],pw:[],dn:[],up:[]};
+const walk=(v,t,k,j)=>clamp(v+(t-v)*k+(Math.random()-.5)*j,0,100);
+
+function fmtRate(b){ if(b>=1e6) return [(b/1e6).toFixed(1),'MB/s']; if(b>=1e3) return [(b/1e3).toFixed(0),'KB/s']; return [b.toFixed(0),'B/s'] }
+function fmtShort(b){ return b>=1e6?(b/1e6).toFixed(1)+'M':(b/1e3).toFixed(0)+'K' }
+function fmtSize(b){ return b>=1e9?(b/1e9).toFixed(1)+' GB':(b/1e6).toFixed(0)+' MB' }
+
+function tick(){
+  const t=scenes[scene];
+  st.cpu=walk(st.cpu,t.cpu,.35,10); st.gpu=walk(st.gpu,t.gpu,.35,10); st.mem=walk(st.mem,t.mem,.15,1.5);
+  st.dn=Math.max(0,st.dn+(t.dn-st.dn)*.4+(Math.random()-.5)*t.dn*.6);
+  st.up=Math.max(0,st.up+(t.up-st.up)*.4+(Math.random()-.5)*t.up*.6);
+  st.pw=clamp(st.pw+(t.pw-st.pw)*.35+(Math.random()-.5)*3,2,60);
+  st.totDn+=st.dn*1.5; st.totUp+=st.up*1.5;
+  st.cores=st.cores.map((c,i)=>walk(c, i<8? st.cpu*(1.2-i*.06) : st.cpu*.6+15, .5, 25));
+  for(const [k,v] of Object.entries({cpu:st.cpu,gpu:st.gpu,mem:st.mem,pw:st.pw,dn:st.dn,up:st.up,net:Math.min(100,Math.log10(st.dn+1)/8*100)})){
+    hist[k].push(v); if(hist[k].length>N) hist[k].shift();
+  }
+  render();
+}
+
+function sparkPath(arr,max,h=36,w=100){
+  if(arr.length<2) return '';
+  const step=w/(N-1), off=(N-arr.length)*step;
+  return arr.map((v,i)=>`${i?'L':'M'}${(off+i*step).toFixed(2)},${(h-(v/max)*h*.9).toFixed(2)}`).join('');
+}
+function area(p,h,w=100){ return p? p+`L${w},${h}L${p.split(',')[0].slice(1)},${h}Z`:'' }
+
+function render(){
+  const heat=v=>v>80?'var(--red)':v>60?'var(--amber)':'var(--blue)';
+  // CPU
+  $('#cpuVal').textContent=st.cpu.toFixed(0);
+  $('#cpuPw').textContent=(st.cpu/100*18+0.4).toFixed(1)+' W';
+  $('#cores').innerHTML=st.cores.map((c,i)=>(i===8?'<i class="gap"></i>':'')+`<i><b style="height:${c}%;background:${i<8?'var(--blue)':'var(--cyan)'};opacity:${.45+c/180}"></b></i>`).join('');
+  // GPU
+  $('#gpuVal').textContent=st.gpu.toFixed(0);
+  $('#gpuPw').textContent=(st.gpu/100*14+0.1).toFixed(1)+' W';
+  const gp=sparkPath(hist.gpu,100);
+  $('#gpuSpark').innerHTML=`<path d="${area(gp,36)}" fill="var(--violet)" opacity=".15"/><path d="${gp}" fill="none" stroke="var(--violet)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>`;
+  $('#gpuMem').textContent=`显存占用 ${(1+st.gpu/100*5).toFixed(1)} GB`;
+  // 内存
+  const used=st.mem/100*24;
+  $('#memVal').textContent=used.toFixed(1);
+  const [a,w,c]=[st.mem*.62,st.mem*.23,st.mem*.15];
+  $$('#memBar i').forEach((el,i)=>el.style.width=[a,w,c][i]+'%');
+  const lvl=st.mem>85?['严重','var(--red)']:st.mem>72?['警告','var(--amber)']:['正常','var(--green)'];
+  const p=$('#pressure'); p.textContent='压力 '+lvl[0]; p.style.color=lvl[1]; p.style.background=`color-mix(in srgb, ${lvl[1]} 14%, transparent)`;
+  $('#swap').textContent='交换 '+(st.mem>72?((st.mem-72)*80).toFixed(0):0)+' MB';
+  // 网络
+  const [dv,du]=fmtRate(st.dn),[uv,uu]=fmtRate(st.up);
+  $('#dnVal').textContent=dv;$('#dnU').textContent=du;$('#upVal').textContent=uv;$('#upU').textContent=uu;
+  const mx=Math.max(...hist.dn,...hist.up,1);
+  const dp=sparkPath(hist.dn,mx), upp=sparkPath(hist.up,mx);
+  $('#netSpark').innerHTML=`<path d="${area(dp,36)}" fill="var(--emerald)" opacity=".15"/><path d="${dp}" fill="none" stroke="var(--emerald)" stroke-width="1.5" vector-effect="non-scaling-stroke"/><path d="${upp}" fill="none" stroke="var(--amber)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>`;
+  $('#netTotal').textContent=`本次开机 ↓ ${fmtSize(st.totDn)}  ↑ ${fmtSize(st.totUp)}`;
+  // 联动图
+  const W=960,H=170, pp=sparkPath(hist.pw,60,H,W);
+  let svg='';
+  for(let i=1;i<4;i++) svg+=`<line x1="0" x2="${W}" y1="${H*i/4}" y2="${H*i/4}" stroke="hsl(var(--border))" stroke-dasharray="3 4"/>`;
+  svg+=`<path d="${area(pp,H,W)}" fill="var(--blue)" opacity=".12"/><path d="${pp}" fill="none" stroke="var(--blue)" stroke-opacity=".5" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+  const col={cpu:'var(--blue)',gpu:'var(--violet)',mem:'var(--indigo)',net:'var(--emerald)'};
+  $$('#series input').forEach(cb=>{ if(cb.checked){ const k=cb.dataset.k; svg+=`<path d="${sparkPath(hist[k],100,H,W)}" fill="none" stroke="${col[k]}" stroke-width="2" vector-effect="non-scaling-stroke"/>` }});
+  svg+=`<text x="4" y="12" font-size="10" fill="hsl(var(--muted-foreground))" class="mono">60W</text><text x="4" y="${H-4}" font-size="10" fill="hsl(var(--muted-foreground))">0</text><text x="${W-4}" y="12" font-size="10" text-anchor="end" fill="hsl(var(--muted-foreground))">100%</text><text x="${W-4}" y="${H-4}" font-size="10" text-anchor="end" fill="hsl(var(--muted-foreground))">现在</text>`;
+  $('#chart').innerHTML=svg;
+  // 进程
+  const procs={idle:[['Safari',8.2,4.1,'1.2 GB'],['Kilo',5.4,6.3,'820 MB'],['WindowServer',3.1,3.0,'310 MB'],['Music',1.2,0.8,'240 MB']],
+    build:[['rustc',96.1,412,'3.8 GB'],['cargo',12.4,38,'620 MB'],['Safari',7.9,4.0,'1.2 GB'],['Kilo',5.1,6.0,'820 MB']],
+    game:[['Baldur\'s Gate 3',148.2,210,'6.4 GB'],['WindowServer',18.6,14,'410 MB'],['Discord',4.3,3.2,'560 MB'],['Safari',2.1,1.1,'1.1 GB']],
+    download:[['Safari',22.4,14.2,'1.4 GB'],['nsurlsessiond',9.8,6.1,'48 MB'],['Kilo',5.0,6.1,'820 MB'],['WindowServer',3.0,2.8,'300 MB']]}[scene];
+  $('#procs').innerHTML=procs.map(r=>`<tr><td>${r[0]}</td><td class="mono">${r[1].toFixed(1)}</td><td class="mono">${r[2].toFixed(1)}%</td><td class="mono">${r[3]}</td></tr>`).join('');
+  // popover
+  $('#mCpu').innerHTML=st.cpu.toFixed(0)+'<small>%</small>'; $('#mGpu').innerHTML=st.gpu.toFixed(0)+'<small>%</small>'; $('#mMem').innerHTML=st.mem.toFixed(0)+'<small>%</small>';
+  const bars=$$('#mini .m i'); bars[0].style.width=st.cpu+'%'; bars[0].style.background=heat(st.cpu); bars[1].style.width=st.gpu+'%'; bars[2].style.width=st.mem+'%';
+  $('#mPress').style.background=lvl[1];
+  $('#mDn').textContent='↓ '+fmtShort(st.dn); $('#mUp').textContent='↑ '+fmtShort(st.up);
+  $('#popW').textContent=st.pw.toFixed(1); $('#trayW').textContent=st.pw.toFixed(1)+'w';
+  $$('.tw').forEach(e=>e.textContent=st.pw.toFixed(1)+'w'); $$('.tc').forEach(e=>e.textContent=st.cpu.toFixed(0)+'%');
+  $$('.tg').forEach(e=>e.textContent=st.gpu.toFixed(0)+'%'); $$('.tm').forEach(e=>e.textContent=st.mem.toFixed(0)+'%');
+  $$('.td').forEach(e=>e.textContent='↓'+fmtShort(st.dn)); $$('.tu').forEach(e=>e.textContent='↑'+fmtShort(st.up));
+}
+
+$('#themeBtn').onclick=()=>document.documentElement.classList.toggle('dark');
+$('#pauseBtn').onclick=e=>{paused=!paused;e.target.textContent=paused?'继续数据':'暂停数据';e.target.classList.toggle('on',paused)};
+$$('[data-scene]').forEach(b=>b.onclick=()=>{scene=b.dataset.scene;$$('[data-scene]').forEach(x=>x.classList.toggle('on',x===b))});
+$$('#series input').forEach(cb=>cb.onchange=render);
+$$('.switch').forEach(s=>s.onclick=()=>s.classList.toggle('on'));
+if(matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.classList.add('dark');
+for(let i=0;i<30;i++) tick();
+setInterval(()=>{ if(!paused) tick() },1500);
+</script>
+</body>
+</html>

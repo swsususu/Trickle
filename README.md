@@ -2,7 +2,9 @@
 
 English | [简体中文](README.zh-CN.md)
 
-A macOS menu bar power monitor: live power flow, battery health, and charging status.
+A macOS menu bar power monitor that also shows where the power goes: live power
+flow, battery health and charging status, alongside CPU, GPU, memory and network
+load on the same time axis.
 
 Trickle is a fork of [lzt1008/powerflow](https://github.com/lzt1008/powerflow). The
 upstream project has had no commits since March 2025 and crashes on macOS 26/27;
@@ -13,7 +15,19 @@ Trickle continues maintenance and fixes those failures.
 > Pre-release. No signed build is distributed yet, so a locally built app needs
 > to be opened past Gatekeeper (see [Installing](#installing)).
 
+## Branches
+
+| Branch | For |
+|---|---|
+| `main` | Power only. The original scope: power flow, battery, charging. |
+| `feat/system-monitor` | Everything in `main`, plus system load monitoring. |
+
+System load can also be switched off entirely in Settings, in which case nothing
+is sampled and the app behaves like `main`.
+
 ## Features
+
+### Power
 
 - **Live power flow** — adapter input, system load, battery charge/discharge,
   screen and heatpipe draw, and adapter conversion loss
@@ -21,9 +35,6 @@ Trickle continues maintenance and fixes those failures.
   remaining time estimate
 - **Health trend** — daily capacity snapshots plotted over time, so decay is
   visible across months. History survives upgrades.
-- **Energy usage by app** — the same per-process energy impact Activity Monitor
-  reports. Measured on demand rather than polled, because sampling costs about a
-  second and running it on a timer would use more energy than it saves.
 - **Adapter details** — hover the wattage badge for the live draw against the
   adapter's rating, negotiated USB-C PD tier, and conversion loss. A charger
   delivering well below its rating is the usual answer to "why is this charging
@@ -31,12 +42,37 @@ Trickle continues maintenance and fixes those failures.
 - **History** — charging sessions recorded with power detail
 - **iOS devices** — monitor paired iOS/iPadOS devices over USB or Wi-Fi
 
+### System load
+
+- **CPU** — overall usage and per-core bars, split into efficiency and
+  performance cores
+- **GPU** — utilisation and driver memory in use. Hidden if the GPU reports no
+  utilisation.
+- **Memory** — memory pressure first, usage second (full memory is normal on
+  macOS; pressure is what tells you it is a problem), with app / wired /
+  compressed breakdown and swap
+- **Network** — download and upload rate, totals since boot. Only physical
+  interfaces are counted, so VPN traffic is not counted twice.
+- **Load × Power** — system power and load plotted together, to answer "what is
+  this 20 W being spent on"
+- **Energy usage by app** — Activity Monitor's energy impact, now with CPU and
+  memory columns from the same sample. Measured on demand, since sampling costs
+  about a second.
+- **Menu bar** — a compact row of load figures in the panel, and an optional
+  extra in the status bar title (`+ CPU`, `+ Network`, or `+ CPU/GPU/Mem`)
+
+All system figures come from kernel counters (`host_processor_info`,
+`host_statistics64`, IORegistry `IOAccelerator`, `net.link.generic` MIB). No root,
+no helper, no extra timer: they are read on the existing power tick.
+
 ## Requirements
 
-Verified on macOS 27.0 / Apple Silicon. Older versions are expected to work but
-are untested; the bundle's declared minimum is inherited from Tauri's default
-and is not a tested floor. Intel Macs run but some SMC sensors are unavailable
-there (see [#18](https://github.com/lzt1008/powerflow/issues/18)).
+macOS 11 or later. Verified on macOS 27.0 / Apple Silicon. For macOS 26, the
+battery readers fall back between the old and new key layouts and every system
+load API used here predates macOS 11, but this has not been run on a macOS 26
+machine. Intel Macs run but some SMC sensors are
+unavailable there (see [#18](https://github.com/lzt1008/powerflow/issues/18)),
+and there is no efficiency/performance core split.
 
 ## Resource usage
 
@@ -53,6 +89,9 @@ The window-open figure is the cost of the live chart and the animated readout;
 turning off animations in Settings reduces it. Memory is dominated by WebKit:
 the settings window is created on demand rather than at launch, which keeps one
 fewer web view resident.
+
+Turning system load on adds about 0.05 percentage points of CPU in the menu bar
+only state (0.66% → 0.71% in a back-to-back measurement on the same machine).
 
 ## Installing
 
@@ -88,10 +127,18 @@ Building the DMG through `create-dmg` can time out on macOS 27 while AppleScript
 styles the Finder window. The `.app` is produced before that step, so
 `pnpm tauri build --bundles app` is a working alternative.
 
+Tests and a hardware probe:
+
+```bash
+cargo test -p tpower -p trickle
+cargo run -p tpower --example system   # prints one live system sample
+cargo run -p tpower --example probe    # prints battery / SMC readings
+```
+
 ## What is fixed relative to upstream
 
-macOS 27 moved and removed several `AppleSmartBattery` keys, which is the root of
-most of these:
+macOS 26/27 moved and removed several `AppleSmartBattery` keys, which is the root
+of most of these:
 
 | Key | macOS 27 |
 |---|---|
@@ -100,6 +147,9 @@ most of these:
 | `CurrentCapacity` / `MaxCapacity` | present, but a 0-100 percentage, not mAh |
 | `BatteryData` (nested dict) | holds the real mAh values |
 | `TimeRemaining` | `65535` sentinel |
+
+Each value falls back to the older top-level key, so the same build reads both
+layouts.
 
 - Startup crash: the unchecked unwrap on missing keys, combined with
   `mem::transmute` over a struct with absent fields, produced a SIGSEGV with no

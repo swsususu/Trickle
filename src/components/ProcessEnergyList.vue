@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ProcessEnergy } from '@/bindings'
 import { commands } from '@/bindings'
+import { formatBytes } from '@/composables/useSystem'
 import { Activity, RefreshCw } from 'lucide-vue-next'
 
 const processes = ref<ProcessEnergy[]>([])
@@ -23,6 +24,9 @@ async function load() {
   isLoading.value = false
   hasLoaded.value = true
 }
+
+const { preference } = usePreferenceAsync()
+const showExtra = computed(() => preference.systemMonitorEnabled)
 
 const maxImpact = computed(() =>
   processes.value.reduce((max, p) => Math.max(max, p.impact), 0),
@@ -75,6 +79,17 @@ const maxImpact = computed(() =>
 
       <div v-else class="space-y-1.5">
         <div
+          v-if="showExtra"
+          class="flex items-center justify-between gap-2 text-[10px] text-muted-foreground px-1.5"
+        >
+          <span>{{ $t('processes.app') }}</span>
+          <span class="flex shrink-0 gap-3">
+            <span class="w-12 text-right">CPU</span>
+            <span class="w-14 text-right">{{ $t('system.memory') }}</span>
+            <span class="w-10 text-right text-foreground">{{ $t('processes.impact') }}</span>
+          </span>
+        </div>
+        <div
           v-for="proc in processes"
           :key="proc.pid"
           class="relative flex items-center justify-between gap-2 text-xs font-mono py-1"
@@ -86,8 +101,12 @@ const maxImpact = computed(() =>
             :style="{ width: `${maxImpact ? (proc.impact / maxImpact) * 100 : 0}%` }"
           />
           <span class="relative truncate pl-1.5">{{ proc.name }}</span>
-          <span class="relative shrink-0 pr-1.5 text-muted-foreground">
-            {{ proc.impact.toFixed(1) }}
+          <span class="relative shrink-0 pr-1.5 flex gap-3 text-muted-foreground">
+            <template v-if="showExtra">
+              <span class="w-12 text-right">{{ proc.cpu.toFixed(1) }}%</span>
+              <span class="w-14 text-right">{{ formatBytes(proc.memory) }}</span>
+            </template>
+            <span class="w-10 text-right text-foreground">{{ proc.impact.toFixed(1) }}</span>
           </span>
         </div>
         <p class="pt-1 text-[10px] text-muted-foreground">
