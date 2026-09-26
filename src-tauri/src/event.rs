@@ -85,7 +85,7 @@ pub struct DeviceEvent {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Event, Type)]
-pub struct PowerUpdatedEvent(pub String);
+pub struct PowerUpdatedEvent(pub crate::tray_render::TrayLabel);
 
 #[derive(Serialize, Deserialize, Debug, Clone, Event, Type)]
 pub struct WindowLoadedEvent;

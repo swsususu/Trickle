@@ -209,7 +209,7 @@ adapterDescription?: string | null;
  */
 adapterPowerTier?: number; adapterIsWireless?: boolean; cycleCount: number; currentCapacity: number; maxCapacity: number; designCapacity?: number }
 export type PowerTickEvent = { data: NormalizedResource }
-export type PowerUpdatedEvent = string
+export type PowerUpdatedEvent = TrayLabel
 export type PreferenceEvent = { theme: Theme } | { animationsEnabled: boolean } | { updateInterval: number } | { language: string } | { statusBarItem: StatusBarItem } | { statusBarShowCharging: boolean } | { systemMonitorEnabled: boolean } | { statusBarSystem: StatusBarSystem }
 export type ProcessEnergy = { pid: number; name: string; 
 /**
@@ -247,6 +247,19 @@ export type SystemStats = { cpu: CpuStats;
 gpu: GpuStats | null; memory: MemoryStats; network: NetworkStats }
 export type SystemTickEvent = { data: SystemStats }
 export type Theme = "light" | "dark" | "system"
+/**
+ * What the status bar shows. Built on the power tick, drawn on the main
+ * thread.
+ */
+export type TrayLabel = { 
+/**
+ * The power reading, e.g. `12.3w`.
+ */
+primary: string; 
+/**
+ * Two-line stacks drawn after it, e.g. `[["↓1.2M", "↑86K"]]`.
+ */
+stacks: ([string, string])[] }
 export type WindowLoadedEvent = null
 
 /** tauri-specta globals **/

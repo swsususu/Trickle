@@ -103,28 +103,43 @@ pub fn short_rate(bytes_per_sec: f64) -> String {
     }
 }
 
-/// Text appended after the power figure in the status bar title.
-pub fn status_bar_suffix(mode: StatusBarSystem, stats: Option<&SystemStats>) -> Option<String> {
-    let stats = stats?;
+/// Two-line stacks drawn after the power figure in the status bar.
+pub fn status_bar_stacks(mode: StatusBarSystem, stats: Option<&SystemStats>) -> Vec<[String; 2]> {
+    let Some(stats) = stats else {
+        return Vec::new();
+    };
+    let pct = |v: f32| format!("{:.0}%", v.clamp(0.0, 100.0));
     let mem = if stats.memory.total > 0 {
-        stats.memory.used as f64 / stats.memory.total as f64 * 100.0
+        stats.memory.used as f32 / stats.memory.total as f32 * 100.0
     } else {
         0.0
     };
+    let net = || {
+        [
+            format!("↓{}", short_rate(stats.network.down_rate)),
+            format!("↑{}", short_rate(stats.network.up_rate)),
+        ]
+    };
     match mode {
-        StatusBarSystem::None => None,
-        StatusBarSystem::Cpu => Some(format!("{:.0}%", stats.cpu.usage)),
-        StatusBarSystem::Network => Some(format!(
-            "↓{} ↑{}",
-            short_rate(stats.network.down_rate),
-            short_rate(stats.network.up_rate)
-        )),
-        StatusBarSystem::Compact => Some(format!(
-            "C{:.0}% G{:.0}% M{:.0}%",
-            stats.cpu.usage,
-            stats.gpu.map_or(0.0, |g| g.usage),
-            mem
-        )),
+        StatusBarSystem::None => Vec::new(),
+        StatusBarSystem::Cpu => vec![["CPU".into(), pct(stats.cpu.usage)]],
+        StatusBarSystem::Network => vec![net()],
+        StatusBarSystem::Compact => {
+            let mut out = vec![[
+                format!("C {}", pct(stats.cpu.usage)),
+                format!("M {}", pct(mem)),
+            ]];
+            if let Some(gpu) = stats.gpu {
+                out[0] = [
+                    format!("C {}", pct(stats.cpu.usage)),
+                    format!("G {}", pct(gpu.usage)),
+                ];
+                out.push([format!("M {}", pct(mem)), net()[0].clone()]);
+            } else {
+                out.push(net());
+            }
+            out
+        }
     }
 }
 
@@ -154,20 +169,41 @@ mod tests {
     }
 
     #[test]
-    fn suffix_follows_mode() {
+    fn stacks_follow_mode() {
         let mut stats = SystemStats::default();
         stats.cpu.usage = 23.4;
         stats.memory.total = 100;
         stats.memory.used = 61;
-        assert_eq!(status_bar_suffix(StatusBarSystem::None, Some(&stats)), None);
-        assert_eq!(status_bar_suffix(StatusBarSystem::Cpu, None), None);
+        stats.network.down_rate = 1.25 * 1024.0 * 1024.0;
+        stats.network.up_rate = 86.0 * 1024.0;
+        assert!(status_bar_stacks(StatusBarSystem::None, Some(&stats)).is_empty());
+        assert!(status_bar_stacks(StatusBarSystem::Cpu, None).is_empty());
         assert_eq!(
-            status_bar_suffix(StatusBarSystem::Cpu, Some(&stats)).as_deref(),
-            Some("23%")
+            status_bar_stacks(StatusBarSystem::Cpu, Some(&stats)),
+            vec![["CPU".to_string(), "23%".to_string()]]
         );
         assert_eq!(
-            status_bar_suffix(StatusBarSystem::Compact, Some(&stats)).as_deref(),
-            Some("C23% G0% M61%")
+            status_bar_stacks(StatusBarSystem::Network, Some(&stats)),
+            vec![["↓1.2M".to_string(), "↑86K".to_string()]]
+        );
+        // No GPU: CPU/memory, then network.
+        assert_eq!(
+            status_bar_stacks(StatusBarSystem::Compact, Some(&stats)),
+            vec![
+                ["C 23%".to_string(), "M 61%".to_string()],
+                ["↓1.2M".to_string(), "↑86K".to_string()],
+            ]
+        );
+        stats.gpu = Some(tpower::system::GpuStats {
+            usage: 8.0,
+            memory_used: 0,
+        });
+        assert_eq!(
+            status_bar_stacks(StatusBarSystem::Compact, Some(&stats)),
+            vec![
+                ["C 23%".to_string(), "G 8%".to_string()],
+                ["M 61%".to_string(), "↓1.2M".to_string()],
+            ]
         );
     }
 }

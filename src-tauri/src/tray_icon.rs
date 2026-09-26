@@ -6,10 +6,14 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     ActivationPolicy, Manager, Runtime,
 };
-use tauri_plugin_nspopover::{AppExt, WindowExt as _};
+use tauri_plugin_nspopover::{AppExt, StatusItemGetter as _, WindowExt as _};
 use tauri_specta::Event;
 
-use crate::{event::PowerUpdatedEvent, ext::WebviewWindowExt};
+use crate::{
+    event::PowerUpdatedEvent,
+    ext::WebviewWindowExt,
+    tray_render::{self, SlotWidths},
+};
 
 /// `NSPopUpMenuWindowLevel`. Above a fullscreen app's own windows, which sit
 /// at the normal level, so the panel is not buried when one is active.
@@ -141,9 +145,23 @@ pub fn setup_tray_icon<R: Runtime>(app: &impl Manager<R>) -> tauri::Result<()> {
         }
     });
 
+    // Drawn natively rather than through `set_title`; see `tray_render`.
+    let slots = std::sync::Arc::new(std::sync::Mutex::new(SlotWidths::default()));
+    let handle = app.app_handle().clone();
     PowerUpdatedEvent::listen(app.app_handle(), move |event| {
-        tray_icon.set_title(Some(event.payload.0)).unwrap();
+        let label = event.payload.0;
+        let slots = slots.clone();
+        let handle2 = handle.clone();
+        let _ = handle.run_on_main_thread(move || {
+            let button = match handle2.tray_by_id("main") {
+                Some(tray) => tray.get_status_bar_button(),
+                None => return,
+            };
+            let mut slots = slots.lock().unwrap();
+            unsafe { tray_render::render(&button, &label, &mut slots) };
+        });
     });
+    let _ = tray_icon;
 
     match app.popover_window() {
         Some(window) => window.to_popover(),

@@ -58,8 +58,27 @@ tauri-specta = { version = "=2.0.0-rc.20", features = [
 ] }
 strum = "0.26.3"
 objc2 = "0.5.2"
-objc2-app-kit = "0.2.2"
-objc2-foundation = "0.2.2"
+objc2-app-kit = { version = "0.2.2", features = [
+  "block2",
+  "NSAttributedString",
+  "NSButton",
+  "NSCell",
+  "NSColor",
+  "NSControl",
+  "NSFont",
+  "NSFontDescriptor",
+  "NSImage",
+  "NSResponder",
+  "NSStatusBarButton",
+  "NSStringDrawing",
+  "NSView",
+] }
+objc2-foundation = { version = "0.2.2", features = [
+  "NSDictionary",
+  "NSGeometry",
+  "NSString",
+] }
+block2 = "0.5.1"
 log = "0.4.22"
 thiserror = "2.0.9"
 scopefn = "0.0.2"
