@@ -12,6 +12,10 @@ Trickle continues maintenance and fixes those failures.
 
 ![Trickle](docs/images/screenshot.png)
 
+| System load | Menu bar panel | Status bar styles |
+|---|---|---|
+| ![System load](docs/images/system-load.png) | ![Panel](docs/images/popover.png) | ![Status bar](docs/images/statusbar.png) |
+
 > Pre-release. No signed build is distributed yet, so a locally built app needs
 > to be opened past Gatekeeper (see [Installing](#installing)).
 
@@ -58,8 +62,11 @@ is sampled and the app behaves like `main`.
 - **Energy usage by app** — Activity Monitor's energy impact, now with CPU and
   memory columns from the same sample. Measured on demand, since sampling costs
   about a second.
-- **Menu bar** — a compact row of load figures in the panel, and an optional
-  extra in the status bar title (`+ CPU`, `+ Network`, or `+ CPU/GPU/Mem`)
+- **Menu bar** — a compact row of load figures in the panel, and optional
+  two-line stacks after the power figure in the status bar (`+ CPU`,
+  `+ Network`, or `+ CPU/GPU/Mem`). Drawn natively with tabular digits so the
+  item does not change width as the numbers do, and tinted by macOS for light,
+  dark and highlighted menu bars.
 
 All system figures come from kernel counters (`host_processor_info`,
 `host_statistics64`, IORegistry `IOAccelerator`, `net.link.generic` MIB). No root,
