@@ -19,7 +19,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { open } from '@tauri-apps/plugin-shell'
-import { Activity, BadgeInfo, BatteryCharging, CircleDashed, ExternalLink, Eye, Gauge, Languages, Moon, Palette, RotateCw, Sun, SunMoon, Wallet } from 'lucide-vue-next'
+import { Activity, BadgeInfo, BatteryCharging, CircleDashed, CircuitBoard, Cpu, ExternalLink, Eye, Gauge, Languages, MemoryStick, Moon, Network, Palette, PanelTop, RotateCw, Sun, SunMoon, Wallet } from 'lucide-vue-next'
 import { storeToRefs } from 'pinia'
 import { h, ref, watch } from 'vue'
 import { version } from '../package.json'
@@ -43,7 +43,24 @@ const preference = usePreference()
 preference.$tauri.start().then(async () => {
   const refs = storeToRefs(preference)
 
+  // Only keys that are `PreferenceEvent` variants on the Rust side. The
+  // backend deserialises the payload with `expect`, so an unknown key such as
+  // `showCpu` would panic its listener. Other windows pick up the remaining
+  // keys through the pinia store sync.
+  const backendKeys = new Set([
+    'theme',
+    'animationsEnabled',
+    'updateInterval',
+    'language',
+    'statusBarItem',
+    'statusBarShowCharging',
+    'systemMonitorEnabled',
+    'statusBarSystem',
+  ])
+
   for (const key in refs) {
+    if (!backendKeys.has(key))
+      continue
     // TODO: fix types
     const ref = refs[key as keyof typeof refs]
     watch(ref, () => {
@@ -264,6 +281,93 @@ function SettingsSection(props: SettingsSectionProps) {
       >
         <Switch v-model:checked="preference.statusBarShowCharging" class="data-[state=checked]:bg-blue-500" />
       </SettingsItem>
+    </div>
+
+    <Separator />
+
+    <!-- System Load Section -->
+    <SettingsSection :title="$t('settings.system_load')" :icon="Cpu" />
+    <div class="space-y-6">
+      <SettingsItem
+        :name="$t('settings.system_monitor')"
+        :description="$t('settings.system_monitor_desc')"
+        :icon="Activity"
+      >
+        <Switch v-model:checked="preference.systemMonitorEnabled" class="data-[state=checked]:bg-blue-500" />
+      </SettingsItem>
+
+      <template v-if="preference.systemMonitorEnabled">
+        <SettingsItem name="CPU" :description="$t('settings.show_cpu_desc')" :icon="Cpu">
+          <Switch v-model:checked="preference.showCpu" class="data-[state=checked]:bg-blue-500" />
+        </SettingsItem>
+        <SettingsItem name="GPU" :description="$t('settings.show_gpu_desc')" :icon="CircuitBoard">
+          <Switch v-model:checked="preference.showGpu" class="data-[state=checked]:bg-blue-500" />
+        </SettingsItem>
+        <SettingsItem :name="$t('system.memory')" :description="$t('settings.show_memory_desc')" :icon="MemoryStick">
+          <Switch v-model:checked="preference.showMemory" class="data-[state=checked]:bg-blue-500" />
+        </SettingsItem>
+        <SettingsItem :name="$t('system.network')" :description="$t('settings.show_network_desc')" :icon="Network">
+          <Switch v-model:checked="preference.showNetwork" class="data-[state=checked]:bg-blue-500" />
+        </SettingsItem>
+
+        <SettingsItem
+          :name="$t('settings.network_unit')"
+          :description="$t('settings.network_unit_desc')"
+          :icon="Gauge"
+        >
+          <Select v-model="preference.networkUnit">
+            <SelectTrigger class="w-[150px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="bytes">
+                  {{ $t('settings.unit_bytes') }}
+                </SelectItem>
+                <SelectItem value="bits">
+                  {{ $t('settings.unit_bits') }}
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </SettingsItem>
+
+        <SettingsItem
+          :name="$t('settings.popover_stats')"
+          :description="$t('settings.popover_stats_desc')"
+          :icon="PanelTop"
+        >
+          <Switch v-model:checked="preference.popoverSystemStats" class="data-[state=checked]:bg-blue-500" />
+        </SettingsItem>
+
+        <SettingsItem
+          :name="$t('settings.status_bar_system')"
+          :description="$t('settings.status_bar_system_desc')"
+          :icon="BadgeInfo"
+        >
+          <Select v-model="preference.statusBarSystem">
+            <SelectTrigger class="w-[150px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="none">
+                  {{ $t('settings.sbs_none') }}
+                </SelectItem>
+                <SelectItem value="cpu">
+                  {{ $t('settings.sbs_cpu') }}
+                </SelectItem>
+                <SelectItem value="network">
+                  {{ $t('settings.sbs_network') }}
+                </SelectItem>
+                <SelectItem value="compact">
+                  {{ $t('settings.sbs_compact') }}
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </SettingsItem>
+      </template>
     </div>
 
     <!-- <Separator /> -->

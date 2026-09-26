@@ -54,6 +54,16 @@ async getBatteryHealthHistory() : Promise<Result<BatteryHealthSnapshot[], string
 async getProcessEnergy() : Promise<ProcessEnergy[]> {
     return await TAURI_INVOKE("get_process_energy");
 },
+/**
+ * Resize the status bar panel to fit its content.
+ * 
+ * The panel is an `NSPopover` whose size is fixed from the window frame when
+ * it is created, so the web view cannot grow it by itself. The web view
+ * measures its content and asks for the height it needs; the width is kept.
+ */
+async setPopoverHeight(height: number) : Promise<void> {
+    await TAURI_INVOKE("set_popover_height", { height });
+},
 async deleteHistoryById(id: number) : Promise<Result<number, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("delete_history_by_id", { id }) };
@@ -74,6 +84,7 @@ historyRecordedEvent: HistoryRecordedEvent,
 powerTickEvent: PowerTickEvent,
 powerUpdatedEvent: PowerUpdatedEvent,
 preferenceEvent: PreferenceEvent,
+systemTickEvent: SystemTickEvent,
 windowLoadedEvent: WindowLoadedEvent
 }>({
 deviceEvent: "device-event",
@@ -82,6 +93,7 @@ historyRecordedEvent: "history-recorded-event",
 powerTickEvent: "power-tick-event",
 powerUpdatedEvent: "power-updated-event",
 preferenceEvent: "preference-event",
+systemTickEvent: "system-tick-event",
 windowLoadedEvent: "window-loaded-event"
 })
 
@@ -115,11 +127,52 @@ export type Action =
 export type BatteryHealthSnapshot = { day: string; timestamp: number; maxCapacity: number; designCapacity: number; cycleCount: number }
 export type ChargingHistory = { id: number; fromLevel: number; endLevel: number; chargingTime: number; timestamp: number; name: string; udid: string; isRemote: number; adapterName: string }
 export type ChargingHistoryDetail = { avg: NormalizedData; peak: NormalizedData; curve: NormalizedResource[]; raw: string[] }
+export type CoreUsage = { usage: number; 
+/**
+ * True for an efficiency core. Always false on Intel, which has none.
+ */
+efficiency: boolean }
+export type CpuStats = { 
+/**
+ * Whole-machine busy share, 0-100.
+ */
+usage: number; 
+/**
+ * Per logical core, in kernel order.
+ */
+cores: CoreUsage[] }
 export type DeviceEvent = { udid: string; name: string; interface: InterfaceType; action: Action }
 export type DevicePowerTickEvent = { udid: string; data: NormalizedResource }
 export type Duration = { secs: number; nanos: number }
+export type GpuStats = { 
+/**
+ * 0-100.
+ */
+usage: number; 
+/**
+ * Bytes of memory the GPU driver has in use; 0 if not reported.
+ */
+memoryUsed: number }
 export type HistoryRecordedEvent = null
 export type InterfaceType = "Unknown" | "USB" | "WiFi"
+export type MemoryPressure = "normal" | "warning" | "critical"
+/**
+ * Sizes in bytes. `used` follows Activity Monitor: app + wired + compressed.
+ */
+export type MemoryStats = { total: number; used: number; app: number; wired: number; compressed: number; swapUsed: number; pressure: MemoryPressure }
+export type NetworkStats = { 
+/**
+ * Bytes per second.
+ */
+downRate: number; upRate: number; 
+/**
+ * Bytes since boot, over the counted interfaces.
+ */
+totalDown: number; totalUp: number; 
+/**
+ * The busiest counted interface in this sample, e.g. `en0`.
+ */
+interface: string | null }
 export type NormalizedData = { systemIn: number; systemLoad: number; batteryPower: number; adapterPower: number; efficiencyLoss: number; 
 /**
  * 0 if not available
@@ -157,13 +210,21 @@ adapterDescription?: string | null;
 adapterPowerTier?: number; adapterIsWireless?: boolean; cycleCount: number; currentCapacity: number; maxCapacity: number; designCapacity?: number }
 export type PowerTickEvent = { data: NormalizedResource }
 export type PowerUpdatedEvent = string
-export type PreferenceEvent = { theme: Theme } | { animationsEnabled: boolean } | { updateInterval: number } | { language: string } | { statusBarItem: StatusBarItem } | { statusBarShowCharging: boolean }
+export type PreferenceEvent = { theme: Theme } | { animationsEnabled: boolean } | { updateInterval: number } | { language: string } | { statusBarItem: StatusBarItem } | { statusBarShowCharging: boolean } | { systemMonitorEnabled: boolean } | { statusBarSystem: StatusBarSystem }
 export type ProcessEnergy = { pid: number; name: string; 
 /**
  * Energy impact, in the same arbitrary units Activity Monitor uses.
  * Comparable between processes, not a wattage.
  */
-impact: number }
+impact: number; 
+/**
+ * CPU share from the same `top` sample, where 100 is one full core.
+ */
+cpu: number; 
+/**
+ * Memory footprint in bytes, as `top`'s MEM column reports it.
+ */
+memory: number }
 /**
  * Which power metric to show in the status bar.
  * 
@@ -172,6 +233,19 @@ impact: number }
  * instead of panicking inside tauri-specta and killing the power-tick task.
  */
 export type StatusBarItem = "system" | "screen" | "heatpipe"
+/**
+ * What, besides power, the status bar title shows.
+ * 
+ * Deserialisation is forgiving for the same reason as `StatusBarItem`: a bad
+ * persisted value must not panic the power-tick task.
+ */
+export type StatusBarSystem = "none" | "cpu" | "network" | "compact"
+export type SystemStats = { cpu: CpuStats; 
+/**
+ * `None` when no accelerator reports utilisation.
+ */
+gpu: GpuStats | null; memory: MemoryStats; network: NetworkStats }
+export type SystemTickEvent = { data: SystemStats }
 export type Theme = "light" | "dark" | "system"
 export type WindowLoadedEvent = null
 

@@ -64,6 +64,25 @@ settings:
   heatpipe_power: Heatpipe Power
   show_charging_power: Show Charging Power
   show_charging_power_desc: When charging, show the charging power instead of the system power
+  system_load: System Load
+  system_monitor: Monitor System Load
+  system_monitor_desc: CPU, GPU, memory and network. When off, nothing is sampled.
+  show_cpu_desc: Overall and per-core usage
+  show_gpu_desc: Hidden automatically if the GPU reports no usage
+  show_memory_desc: Memory pressure first, usage second
+  show_network_desc: Physical interfaces only; VPN tunnels are not double-counted
+  network_unit: Network Unit
+  network_unit_desc: Unit for network throughput
+  unit_bytes: Bytes (MB/s)
+  unit_bits: Bits (Mbps)
+  popover_stats: Show in Menu Bar Panel
+  popover_stats_desc: A compact row of load figures under the power reading
+  status_bar_system: Status Bar Extra
+  status_bar_system_desc: Shown after the power figure in the menu bar
+  sbs_none: Power only
+  sbs_cpu: + CPU
+  sbs_network: + Network
+  sbs_compact: + CPU/GPU/Mem
   about: About
 
   version: Version
@@ -119,6 +138,8 @@ health:
   collecting: Collecting data
   collecting_desc: One snapshot is recorded per day; the trend appears once there are at least two
 processes:
+  app: App
+  impact: Energy
   title: Energy Usage by App
   refresh: Refresh
   measure: Measure energy usage
@@ -132,3 +153,25 @@ update:
   downloading: Downloading…
   up_to_date: Up to date
   failed: Check failed
+
+system:
+  title: System Load
+  memory: Memory
+  network: Network
+  efficiency_cores: '{n} efficiency'
+  performance_cores: '{n} performance'
+  gpu_memory: GPU memory
+  pressure_normal: Pressure normal
+  pressure_warning: Pressure warning
+  pressure_critical: Pressure critical
+  mem_app: App
+  mem_wired: Wired
+  mem_compressed: Compressed
+  swap: Swap
+  since_boot: Since boot
+  load_vs_power: Load × Power
+  load_vs_power_desc: 'System power (area, left axis) against load (lines, right axis). Network uses a log scale.'
+  series_cpu: CPU
+  series_gpu: GPU
+  series_memory: Memory
+  series_network: Network

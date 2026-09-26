@@ -61,6 +61,25 @@ settings:
   system_total: 系统总功率
   show_charging_power: 显示充电功率
   show_charging_power_desc: 在充电时显示充电功率而非系统功率
+  system_load: 系统负载
+  system_monitor: 监控系统负载
+  system_monitor_desc: CPU、GPU、内存与网络。关闭后完全不采集
+  show_cpu_desc: 总占用与每核占用
+  show_gpu_desc: GPU 不报告占用率时自动隐藏
+  show_memory_desc: 以内存压力为主，占用率为辅
+  show_network_desc: 仅统计物理接口，VPN 隧道不重复计数
+  network_unit: 网速单位
+  network_unit_desc: 网络吞吐量的显示单位
+  unit_bytes: 字节 (MB/s)
+  unit_bits: 比特 (Mbps)
+  popover_stats: 在菜单栏面板显示
+  popover_stats_desc: 在功率读数下方显示一行紧凑的负载指标
+  status_bar_system: 状态栏附加信息
+  status_bar_system_desc: 显示在菜单栏功率数字之后
+  sbs_none: 仅功率
+  sbs_cpu: + CPU
+  sbs_network: + 网速
+  sbs_compact: + CPU/GPU/内存
   about: 关于
   build: 构建
   license: 许可证
@@ -115,6 +134,8 @@ health:
   collecting: 正在收集数据
   collecting_desc: 每天记录一次快照，累计两天后显示趋势
 processes:
+  app: 应用
+  impact: 能耗
   title: 应用耗电排行
   refresh: 刷新
   measure: 测量耗电情况
@@ -128,3 +149,25 @@ update:
   downloading: 下载中…
   up_to_date: 已是最新
   failed: 检查失败
+
+system:
+  title: 系统负载
+  memory: 内存
+  network: 网络
+  efficiency_cores: '能效核 {n}'
+  performance_cores: '性能核 {n}'
+  gpu_memory: 显存占用
+  pressure_normal: 压力正常
+  pressure_warning: 压力警告
+  pressure_critical: 压力严重
+  mem_app: App
+  mem_wired: 联动
+  mem_compressed: 压缩
+  swap: 交换
+  since_boot: 本次开机
+  load_vs_power: 负载 × 功耗
+  load_vs_power_desc: 左轴：系统功率（面积）；右轴：占用率（折线）。网络为对数刻度。
+  series_cpu: CPU
+  series_gpu: GPU
+  series_memory: 内存
+  series_network: 网络

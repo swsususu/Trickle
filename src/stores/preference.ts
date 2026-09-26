@@ -1,8 +1,9 @@
-import type { StatusBarItem, Theme } from '@/bindings'
+import type { StatusBarItem, StatusBarSystem, Theme } from '@/bindings'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 const VALID_STATUS_BAR_ITEMS: StatusBarItem[] = ['system', 'screen', 'heatpipe']
+const VALID_STATUS_BAR_SYSTEM: StatusBarSystem[] = ['none', 'cpu', 'network', 'compact']
 const MIN_INTERVAL = 500
 const MAX_INTERVAL = 60_000
 
@@ -24,6 +25,20 @@ export const usePreference = defineStore('preference', () => {
    */
   const autoCheckUpdates = ref(true)
 
+  /**
+   * System load monitoring (CPU, GPU, memory, network). When off, the backend
+   * reads nothing at all and the app behaves like the power-only build.
+   */
+  const systemMonitorEnabled = ref(true)
+  const showCpu = ref(true)
+  const showGpu = ref(true)
+  const showMemory = ref(true)
+  const showNetwork = ref(true)
+  const networkUnit = ref<'bytes' | 'bits'>('bytes')
+  const popoverSystemStats = ref(true)
+  /** Extra metric appended to the power figure in the status bar. */
+  const statusBarSystem = ref<StatusBarSystem>('none')
+
   return {
     theme,
     animationsEnabled,
@@ -32,6 +47,14 @@ export const usePreference = defineStore('preference', () => {
     statusBarItem,
     statusBarShowCharging,
     autoCheckUpdates,
+    systemMonitorEnabled,
+    showCpu,
+    showGpu,
+    showMemory,
+    showNetwork,
+    networkUnit,
+    popoverSystemStats,
+    statusBarSystem,
   }
 }, {
   tauri: {
@@ -55,6 +78,12 @@ export function usePreferenceAsync() {
     if (preference.updateInterval < MIN_INTERVAL || preference.updateInterval > MAX_INTERVAL) {
       console.warn('[preference] invalid updateInterval', preference.updateInterval, 'reset to 2000')
       preference.updateInterval = 2000
+    }
+    if (!VALID_STATUS_BAR_SYSTEM.includes(preference.statusBarSystem)) {
+      preference.statusBarSystem = 'none'
+    }
+    if (preference.networkUnit !== 'bytes' && preference.networkUnit !== 'bits') {
+      preference.networkUnit = 'bytes'
     }
     isLoading.value = false
   })

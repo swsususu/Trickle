@@ -19,6 +19,7 @@ use tpower::{
 use crate::{
     database::save_battery_health_snapshot,
     event::{PowerUpdatedEvent, PreferenceEvent, StatusBarItem, WindowLoadedEvent},
+    system::{status_bar_suffix, StatusBarSystem, SystemMonitor, SystemTickEvent},
 };
 
 pub enum SenderMessage {
@@ -26,6 +27,8 @@ pub enum SenderMessage {
     ChangeInterval(Duration),
     ChangeStatusBarItem(StatusBarItem),
     StatusBarShowCharging(bool),
+    SystemMonitorEnabled(bool),
+    StatusBarSystem(StatusBarSystem),
 }
 
 /// Minimum (500 ms) and maximum (60 s) bounds for the power-tick interval.
@@ -137,7 +140,21 @@ fn emit_power_sample<R: Runtime>(
     next_smc_retry: &mut Instant,
     status_bar_item: &StatusBarItem,
     show_charging: bool,
+    system: &mut SystemMonitor,
 ) {
+    // Sampled first so the status bar title below can include it.
+    let stats = system.sample();
+    if let Some(data) = stats.clone() {
+        if let Err(error) = (SystemTickEvent { data }).emit(app) {
+            log::error!("Failed to emit SystemTickEvent: {error}");
+        }
+    }
+    let suffix = status_bar_suffix(system.status_bar, stats.as_ref());
+    let title = |event: PowerUpdatedEvent| match &suffix {
+        Some(extra) => PowerUpdatedEvent(format!("{}  {extra}", event.0)),
+        None => event,
+    };
+
     if smc_conn.is_none() && Instant::now() >= *next_smc_retry {
         match SMCConnection::new("AppleSMC") {
             Ok(connection) => {
@@ -167,7 +184,7 @@ fn emit_power_sample<R: Runtime>(
                     StatusBarItem::Heatpipe => data.heatpipe_power,
                 }
             };
-            if let Err(error) = PowerUpdatedEvent::new(bar).emit(app) {
+            if let Err(error) = title(PowerUpdatedEvent::new(bar)).emit(app) {
                 log::error!("Failed to emit PowerUpdatedEvent: {error}");
             }
             record_battery_health(app, &data);
@@ -178,8 +195,12 @@ fn emit_power_sample<R: Runtime>(
         Err(error) => {
             log::error!("Failed to get IORegistry: {error}");
             if let Some(smc) = smc {
-                if let Err(error) =
-                    PowerUpdatedEvent::new_with(&smc, status_bar_item, show_charging).emit(app)
+                if let Err(error) = title(PowerUpdatedEvent::new_with(
+                    &smc,
+                    status_bar_item,
+                    show_charging,
+                ))
+                .emit(app)
                 {
                     log::error!("Failed to emit PowerUpdatedEvent: {error}");
                 }
@@ -215,6 +236,14 @@ pub fn start_sender<R: Runtime>(
         .pinia()
         .try_get::<bool>("preference", "statusBarShowCharging")
         .unwrap_or(true);
+    let mut system = SystemMonitor::new(
+        app.pinia()
+            .try_get::<bool>("preference", "systemMonitorEnabled")
+            .unwrap_or(true),
+        app.pinia()
+            .try_get::<StatusBarSystem>("preference", "statusBarSystem")
+            .unwrap_or_default(),
+    );
 
     async_runtime::spawn(async move {
         loop {
@@ -226,6 +255,7 @@ pub fn start_sender<R: Runtime>(
                         &mut next_smc_retry,
                         &status_bar_item,
                         show_charging,
+                        &mut system,
                     );
                 }
                 Some(msg) = rx.recv() => match msg {
@@ -236,6 +266,7 @@ pub fn start_sender<R: Runtime>(
                             &mut next_smc_retry,
                             &status_bar_item,
                             show_charging,
+                            &mut system,
                         );
                     },
                     SenderMessage::ChangeInterval(interval) => {
@@ -251,6 +282,7 @@ pub fn start_sender<R: Runtime>(
                             &mut next_smc_retry,
                             &status_bar_item,
                             show_charging,
+                            &mut system,
                         );
                     },
                     SenderMessage::StatusBarShowCharging(show) => {
@@ -261,7 +293,14 @@ pub fn start_sender<R: Runtime>(
                             &mut next_smc_retry,
                             &status_bar_item,
                             show_charging,
+                            &mut system,
                         );
+                    }
+                    SenderMessage::SystemMonitorEnabled(enabled) => {
+                        system.set_enabled(enabled);
+                    }
+                    SenderMessage::StatusBarSystem(mode) => {
+                        system.status_bar = mode;
                     }
                 }
             }
@@ -292,6 +331,10 @@ pub fn setup_sender_with_events<R: Runtime>(app: &impl Manager<R>) {
             PreferenceEvent::StatusBarShowCharging(show) => {
                 Some(SenderMessage::StatusBarShowCharging(show))
             }
+            PreferenceEvent::SystemMonitorEnabled(enabled) => {
+                Some(SenderMessage::SystemMonitorEnabled(enabled))
+            }
+            PreferenceEvent::StatusBarSystem(mode) => Some(SenderMessage::StatusBarSystem(mode)),
             PreferenceEvent::Language(_) => {
                 // No need to send, perform some menu refreshing
                 None
