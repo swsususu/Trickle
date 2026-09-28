@@ -101,9 +101,7 @@ brew install --cask swsususu/tap/trickle
 也可以从 [Releases](https://github.com/swsususu/Trickle/releases/latest)
 下载 DMG。
 
-从 powerflow 迁移：两者是独立的应用，bundle identifier 不同，因此 Trickle 不会
-覆盖已安装的 powerflow，也不会继承它的历史数据。如果不想看到两个菜单栏图标，
-请手动删除旧应用。
+从 powerflow 迁移过来？见 [常见问题](#常见问题)。
 
 ## 从源码构建
 
@@ -159,6 +157,39 @@ macOS 26/27 移动并移除了若干 `AppleSmartBattery` 键，这是多数问�
 核心电池修复挑拣自 @cnveteran 的
 [powerflow#22](https://github.com/lzt1008/powerflow/pull/22)，他的诊断是正确的；
 其中的品牌化改动未予采纳，因此修复本身能干净套用。
+
+## 常见问题
+
+**Trickle 会替换 powerflow 吗？**
+
+不会。两者是独立的应用，bundle identifier 不同，安装 Trickle 后 powerflow 仍会保留，
+历史数据也不会迁移过来。如果不想看到两个菜单栏图标，请删除 powerflow。
+如果它是通过 Homebrew 安装的：
+
+```bash
+brew uninstall --cask lzt1008/powerflow/powerflow
+brew untap lzt1008/powerflow
+```
+
+**Homebrew 提示 `lzt1008/powerflow` 未被信任（not trusted）。**
+
+新版 Homebrew 要求显式信任 tap，并会在每条命令前列出所有未信任的 tap。这条警告来自
+旧的 powerflow tap，与 Trickle 无关，执行上面两条命令即可消除。列表里其他不再使用的
+tap 同理。
+
+**Homebrew 提示已是最新版本，但实际已有新版发布。**
+
+先更新 tap，再升级：
+
+```bash
+brew update
+brew upgrade --cask swsususu/tap/trickle
+```
+
+**我只想要功率监控。**
+
+在 **设置 → 系统负载** 中关闭「监控系统负载」，关闭后完全不采集。`main` 分支也
+始终只包含功率功能，见 [分支](#分支)。
 
 ## 许可
 
