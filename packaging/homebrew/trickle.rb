@@ -2,19 +2,20 @@ cask "trickle" do
   # Update both on every release. Get the checksum from the published asset:
   #   shasum -a 256 Trickle_<version>_universal.dmg
   # `:no_check` would avoid this step but silently accepts a tampered download.
-  version "0.0.3"
-  sha256 "4fb6243caca1cbb31f91a53152aa3029649a840256347dbc91edb428a43c01eb"
+  version "0.0.5"
+  sha256 "698853b9669381cf414cce22ae219c33d2876a8ced2bf1b645e9e6696404d94b"
 
   url "https://github.com/swsususu/Trickle/releases/download/v#{version}/Trickle_#{version}_universal.dmg"
   name "Trickle"
-  desc "Menu bar power monitor for battery health, power flow and charging"
+  desc "Menu bar power monitor with battery health and system load"
   homepage "https://github.com/swsususu/Trickle"
 
-  # No `depends_on macos`: a cask only ever installs on macOS, so the stanza is
-  # only for asserting a version floor, and Trickle has no tested one. Do not
-  # reintroduce `macos: :any`: Homebrew only accepts version symbols such as
-  # :tahoe or :sequoia, so :any raises MacOSVersion::Error and invalidates the
-  # whole cask ("definition is invalid") for everyone installing it.
+  # Bare `depends_on :macos` declares the platform without a version floor,
+  # which is what current Homebrew's style check requires. Do not use
+  # `depends_on macos: :any`: Homebrew only accepts version symbols there, so
+  # :any raises MacOSVersion::Error and invalidates the cask for everyone. A
+  # version floor is also left out on purpose: Trickle has no tested one.
+  depends_on :macos
 
   app "Trickle.app"
 
