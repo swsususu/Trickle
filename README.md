@@ -118,10 +118,7 @@ brew install --cask swsususu/tap/trickle
 Or download the DMG from
 [Releases](https://github.com/swsususu/Trickle/releases/latest).
 
-Migrating from powerflow: the two are separate applications, with different
-bundle identifiers, so Trickle will not replace an existing powerflow install and
-will not inherit its history. Remove the old app if you do not want two menu bar
-icons.
+Coming from powerflow? See [FAQ](#faq).
 
 ## Building from source
 
@@ -182,6 +179,43 @@ The core battery fixes were cherry-picked from
 [powerflow#22](https://github.com/lzt1008/powerflow/pull/22) by @cnveteran, whose
 diagnosis was correct; the rebranding in that PR was left out so the fixes apply
 on their own.
+
+## FAQ
+
+**Does Trickle replace powerflow?**
+
+No. They are separate applications with different bundle identifiers, so
+installing Trickle leaves powerflow in place and does not import its history.
+Remove powerflow if you do not want two menu bar icons. If it was installed
+through Homebrew:
+
+```bash
+brew uninstall --cask lzt1008/powerflow/powerflow
+brew untap lzt1008/powerflow
+```
+
+**Homebrew warns that `lzt1008/powerflow` is not trusted.**
+
+Recent Homebrew versions require taps to be trusted explicitly and list every
+untrusted tap on each command. The warning comes from the old powerflow tap, not
+from Trickle; the two commands above remove it. The same applies to any other
+tap listed there that you no longer use.
+
+**Homebrew says the latest version is already installed, but a newer release
+exists.**
+
+Update the tap first, then upgrade:
+
+```bash
+brew update
+brew upgrade --cask swsususu/tap/trickle
+```
+
+**I only want power monitoring.**
+
+Turn off **Settings → System Load → Monitor System Load**. Nothing is sampled
+while it is off. The `main` branch also stays power-only; see
+[Branches](#branches).
 
 ## License
 
