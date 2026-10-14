@@ -207,7 +207,7 @@ macOS 27.0 (26A428) / arm64
 rustc 1.96.1 (stable-aarch64-apple-darwin) / LLVM 22.1.2
 Apple clang 21.0.0 / ld-27037.1
 node v25.2.1 / pnpm 10.0.0-rc.0
-git user: suwei1 <58540721+swsususu@users.noreply.github.com>
+git user: swsususu <58540721+swsususu@users.noreply.github.com>
 origin:   git@github.com:swsususu/Trickle.git
 upstream: https://github.com/lzt1008/powerflow.git
 ```
