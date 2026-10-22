@@ -2,8 +2,8 @@ cask "trickle" do
   # Update both on every release. Get the checksum from the published asset:
   #   shasum -a 256 Trickle_<version>_universal.dmg
   # `:no_check` would avoid this step but silently accepts a tampered download.
-  version "0.0.6"
-  sha256 "5fd7f78a9e8fa4481c0bf609a2d425de2ddc7a6c647ddce2a9febfa333e9bc1b"
+  version "0.0.7"
+  sha256 "d4dec6272c6d641cf3dc749d56f27f34f74e234e423ef62d73b2bb2af96a5919"
 
   url "https://github.com/swsususu/Trickle/releases/download/v#{version}/Trickle_#{version}_universal.dmg"
   name "Trickle"
