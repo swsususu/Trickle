@@ -8,6 +8,14 @@
   }
 }
 
+/* Set by `pauseTransitionsWhileHidden` in src/lib/setup.ts. */
+.no-transitions *,
+.no-transitions *::before,
+.no-transitions *::after {
+  transition: none !important;
+  animation: none !important;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
