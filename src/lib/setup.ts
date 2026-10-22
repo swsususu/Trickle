@@ -11,7 +11,22 @@ const i18n = createI18n({
   messages,
 })
 
+// WebKit freezes a hidden document's animation timeline, so a CSS transition
+// started there never finishes. Every tick restarts the transitions on the
+// power bar and load meters, and each replaced one leaks memory inside
+// WebContent: the status bar panel's process (always "hidden", see usePower)
+// grew by ~120 MB per 1000 ticks, reaching GBs after a day (issue #4).
+// Switching transitions off while hidden keeps it flat.
+function pauseTransitionsWhileHidden() {
+  const sync = () => document.documentElement.classList
+    .toggle('no-transitions', document.visibilityState === 'hidden')
+  sync()
+  document.addEventListener('visibilitychange', sync)
+}
+
 export function setup(entry: Component, fn?: (app: App<Element>) => void) {
+  pauseTransitionsWhileHidden()
+
   const app = createApp(entry)
     .use(MotionPlugin)
     .use(
