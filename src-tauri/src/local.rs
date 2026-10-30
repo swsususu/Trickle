@@ -19,7 +19,8 @@ use tpower::{
 use crate::{
     database::save_battery_health_snapshot,
     event::{PowerUpdatedEvent, PreferenceEvent, StatusBarItem, WindowLoadedEvent},
-    system::{status_bar_stacks, StatusBarSystem, SystemMonitor, SystemTickEvent},
+    system::{status_bar_stacks, StatusBarSystem, SystemMonitor},
+    tick::{self, TickSample},
     tray_render::TrayLabel,
 };
 
@@ -145,11 +146,7 @@ fn emit_power_sample<R: Runtime>(
 ) {
     // Sampled first so the status bar title below can include it.
     let stats = system.sample();
-    if let Some(data) = stats.clone() {
-        if let Err(error) = (SystemTickEvent { data }).emit(app) {
-            log::error!("Failed to emit SystemTickEvent: {error}");
-        }
-    }
+    let time = chrono::Local::now().timestamp_millis();
     let stacks = status_bar_stacks(system.status_bar, stats.as_ref());
     let title = |mut event: PowerUpdatedEvent| {
         event.0.stacks = stacks.clone();
@@ -189,12 +186,30 @@ fn emit_power_sample<R: Runtime>(
                 log::error!("Failed to emit PowerUpdatedEvent: {error}");
             }
             record_battery_health(app, &data);
+            tick::deliver(
+                app,
+                TickSample {
+                    time,
+                    power: Some(data.clone()),
+                    system: stats,
+                },
+            );
+            // Only the history recorder listens to this now, in Rust, so it
+            // does not reach any web view.
             if let Err(error) = (PowerTickEvent { data }).emit(app) {
                 log::error!("Failed to emit PowerTickEvent: {error}");
             }
         }
         Err(error) => {
             log::error!("Failed to get IORegistry: {error}");
+            tick::deliver(
+                app,
+                TickSample {
+                    time,
+                    power: None,
+                    system: stats,
+                },
+            );
             if let Some(smc) = smc {
                 if let Err(error) = title(PowerUpdatedEvent::new_with(
                     &smc,

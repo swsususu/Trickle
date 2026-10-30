@@ -84,7 +84,6 @@ historyRecordedEvent: HistoryRecordedEvent,
 powerTickEvent: PowerTickEvent,
 powerUpdatedEvent: PowerUpdatedEvent,
 preferenceEvent: PreferenceEvent,
-systemTickEvent: SystemTickEvent,
 windowLoadedEvent: WindowLoadedEvent
 }>({
 deviceEvent: "device-event",
@@ -93,7 +92,6 @@ historyRecordedEvent: "history-recorded-event",
 powerTickEvent: "power-tick-event",
 powerUpdatedEvent: "power-updated-event",
 preferenceEvent: "preference-event",
-systemTickEvent: "system-tick-event",
 windowLoadedEvent: "window-loaded-event"
 })
 
@@ -245,8 +243,25 @@ export type SystemStats = { cpu: CpuStats;
  * `None` when no accelerator reports utilisation.
  */
 gpu: GpuStats | null; memory: MemoryStats; network: NetworkStats }
-export type SystemTickEvent = { data: SystemStats }
 export type Theme = "light" | "dark" | "system"
+/**
+ * Payload of the `tick:<label>` event: queued samples, oldest first. The
+ * last one is the current reading.
+ */
+export type TickBatch = { samples: TickSample[] }
+export type TickSample = { 
+/**
+ * Unix time in milliseconds when the sample was taken.
+ */
+time: number; 
+/**
+ * `None` when the IORegistry read failed.
+ */
+power: NormalizedResource | null; 
+/**
+ * `None` when system monitoring is switched off.
+ */
+system: SystemStats | null }
 /**
  * What the status bar shows. Built on the power tick, drawn on the main
  * thread.

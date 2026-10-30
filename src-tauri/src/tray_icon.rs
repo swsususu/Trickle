@@ -115,6 +115,9 @@ pub fn setup_tray_icon<R: Runtime>(app: &impl Manager<R>) -> tauri::Result<()> {
                     // The popover's window only exists once it is shown, so
                     // the level has to be raised here rather than at setup.
                     raise_popover_window(handle);
+                    // The closed panel gets no samples; send the queued ones
+                    // so it opens with current numbers.
+                    crate::tick::flush(handle);
                 }
             }
             // Right button gets the context menu. The menu cannot stay

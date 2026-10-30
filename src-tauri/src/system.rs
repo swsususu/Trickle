@@ -8,14 +8,7 @@ use std::fmt;
 
 use serde::{de, Deserialize, Deserializer, Serialize};
 use specta::Type;
-use tauri_specta::Event;
 use tpower::system::{SystemSampler, SystemStats};
-
-#[derive(Serialize, Deserialize, Debug, Clone, Event, Type)]
-#[serde(rename_all = "camelCase")]
-pub struct SystemTickEvent {
-    pub data: SystemStats,
-}
 
 /// What, besides power, the status bar title shows.
 ///

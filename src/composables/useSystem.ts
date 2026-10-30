@@ -1,7 +1,5 @@
 import type { SystemStats } from '@/bindings'
-import { events } from '@/bindings'
 import { reactive } from 'vue'
-import { usePowerData } from './usePower'
 
 /** Samples kept for sparklines and the load × power chart. */
 const MAX_HISTORY = 60
@@ -27,23 +25,24 @@ const state: SystemState = reactive({
   history: [],
 })
 
-events.systemTickEvent.listen(({ payload: { data } }) => {
+/**
+ * Apply one system sample. `power` is the system power of the same tick, so
+ * load and watts share a time axis.
+ */
+export function applySystemSample(data: SystemStats, time: number, power: number) {
   state.data = data
   state.history.push({
-    time: Date.now(),
+    time,
     cpu: data.cpu.usage,
     gpu: data.gpu?.usage ?? 0,
     memory: memoryPercent(data),
     down: data.network.downRate,
     up: data.network.upRate,
-    // The power tick for this sample is emitted right after this event, so
-    // this is the previous reading, one interval old: close enough for a
-    // trend line, and it avoids pairing events by timestamp.
-    power: usePowerData().local.data.systemLoad ?? 0,
+    power,
   })
   if (state.history.length > MAX_HISTORY)
     state.history.shift()
-})
+}
 
 export function memoryPercent(data: SystemStats) {
   return data.memory.total ? (data.memory.used / data.memory.total) * 100 : 0

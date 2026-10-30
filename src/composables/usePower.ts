@@ -1,10 +1,12 @@
-import type { InterfaceType, NormalizedResource } from '@/bindings'
+import type { InterfaceType, NormalizedResource, TickBatch } from '@/bindings'
 import type { Reactive } from 'vue'
 import { events } from '@/bindings'
-import { useDocumentVisibility } from '@vueuse/core'
+import { listen } from '@tauri-apps/api/event'
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
+import { useDocumentVisibility } from '@vueuse/core'
 
 import { computed, reactive } from 'vue'
+import { applySystemSample } from './useSystem'
 import { useTab } from './useTab'
 
 const MAX_STATISTICS_LENGTH = 20
@@ -36,7 +38,11 @@ const localPowerData: Reactive<RawPowerData> = reactive({
 
 let localUpdateCount = 0
 
-events.powerTickEvent.listen(async ({ payload: { data } }) => {
+/**
+ * Apply one local power sample. Samples taken while this window was hidden
+ * arrive late in a batch, so the chart uses the sample's own time.
+ */
+export function applyPowerSample(data: NormalizedResource, time: number) {
   localPowerData.data = data
 
   localUpdateCount++
@@ -47,13 +53,26 @@ events.powerTickEvent.listen(async ({ payload: { data } }) => {
   trimStatistics(localPowerData.statistics)
 
   localPowerData.statistics.push({
-    'time': new Date().toLocaleTimeString(),
+    'time': new Date(time).toLocaleTimeString(),
     'System Power': data.systemLoad,
     'System In': data.systemIn,
     'Battery Level': data.batteryLevel,
     'Screen Power': data.brightnessPower,
     'Heatpipe Power': data.heatpipePower,
   })
+}
+
+// Local samples reach this window only while it is on screen; the ones taken
+// while it was not arrive in one batch when it comes back (see tick.rs). The
+// event name carries the window label because Tauri evaluates an event in
+// every web view listening to that name, which would wake the hidden ones.
+listen<TickBatch>(`tick:${getCurrentWebviewWindow().label}`, ({ payload }) => {
+  for (const { time, power, system } of payload.samples) {
+    if (system)
+      applySystemSample(system, time, power?.systemLoad ?? localPowerData.data.systemLoad ?? 0)
+    if (power)
+      applyPowerSample(power, time)
+  }
 })
 
 events.devicePowerTickEvent.listen(({ payload: { data, udid } }) => {

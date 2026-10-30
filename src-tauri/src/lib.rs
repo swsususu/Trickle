@@ -29,6 +29,7 @@ mod local;
 mod menu;
 mod process_energy;
 mod system;
+mod tick;
 mod tray_icon;
 mod tray_render;
 mod util;
@@ -194,8 +195,8 @@ pub fn create_specta() -> tauri_specta::Builder {
             PowerUpdatedEvent,
             WindowLoadedEvent,
             HistoryRecordedEvent,
-            system::SystemTickEvent,
-        ]);
+        ])
+        .typ::<tick::TickBatch>();
 
     #[cfg(debug_assertions)]
     builder
@@ -230,6 +231,7 @@ pub fn run() {
         .plugin(tauri_plugin_nspopover::init())
         .invoke_handler(specta.invoke_handler())
         .manage(DeviceState::default())
+        .manage(tick::TickBacklog::default())
         .menu(setup_menu)
         .on_window_event(handle_window_event)
         .setup(move |app| {
@@ -279,6 +281,9 @@ fn handle_window_event(window: &Window, event: &WindowEvent) {
                     .set_activation_policy(ActivationPolicy::Accessory)
                     .unwrap();
             }
+            // Hidden or covered, the main window got no samples; send the
+            // queued ones now rather than at the next tick.
+            WindowEvent::Focused(true) => tick::flush(window.app_handle()),
             WindowEvent::ThemeChanged(theme) => {
                 println!("Theme changed to: {}", theme);
             }
