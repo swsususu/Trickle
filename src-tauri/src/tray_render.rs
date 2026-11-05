@@ -90,15 +90,53 @@ fn text_width(text: &str, attrs: &NSDictionary<NSString, objc2::runtime::AnyObje
     }
 }
 
-/// Minimum widths per slot, which only ever grow while the app runs.
+/// Consecutive renders a narrower text must persist before its slot shrinks.
+const SHRINK_AFTER: u32 = 5;
+
+/// Width of one slot plus the state needed to shrink it again.
+#[derive(Default, Clone, Debug, PartialEq)]
+struct Slot {
+    width: f64,
+    /// Consecutive renders whose text was narrower than `width`.
+    narrower: u32,
+    /// Widest text seen during the current run of narrower renders.
+    pending: f64,
+}
+
+impl Slot {
+    fn fit(&mut self, width: f64) -> f64 {
+        let needed = width.ceil();
+        if needed >= self.width {
+            // Grow at once: clipping a value is worse than a one-off shift.
+            self.width = needed;
+            self.narrower = 0;
+            self.pending = 0.0;
+        } else {
+            self.narrower += 1;
+            self.pending = self.pending.max(needed);
+            if self.narrower >= SHRINK_AFTER {
+                // Shrink to the widest text of the run, so a value that
+                // flickers between two widths does not shrink and regrow.
+                self.width = self.pending;
+                self.narrower = 0;
+                self.pending = 0.0;
+            }
+        }
+        self.width
+    }
+}
+
+/// Widths per slot. A slot grows immediately when its text gets wider and
+/// shrinks only after the text stayed narrower for `SHRINK_AFTER` renders.
 ///
-/// Without this a reading that drops from `100%` to `99%` would shrink the
-/// item. Growing is allowed since clipping a value would be worse than a
-/// one-off shift.
+/// Without hysteresis a reading that drops from `100%` to `99%` (or `10.0w`
+/// to `9.9w` and back) would resize the item every tick. Without shrinking,
+/// one wide reading (e.g. `67.0w` while charging) would leave empty space on
+/// the left of the right-aligned text for the rest of the session.
 #[derive(Default)]
 pub struct SlotWidths {
-    primary: f64,
-    stacks: Vec<f64>,
+    primary: Slot,
+    stacks: Vec<Slot>,
 }
 
 impl SlotWidths {
@@ -107,13 +145,12 @@ impl SlotWidths {
             None => &mut self.primary,
             Some(i) => {
                 if self.stacks.len() <= i {
-                    self.stacks.resize(i + 1, 0.0);
+                    self.stacks.resize(i + 1, Slot::default());
                 }
                 &mut self.stacks[i]
             }
         };
-        *slot = slot.max(width.ceil());
-        *slot
+        slot.fit(width)
     }
 
     /// Called when the layout changes shape (a stack added or removed), so
@@ -236,6 +273,63 @@ mod tests {
         assert_eq!(slot_template("12.3w"), "00.0w");
         assert_eq!(slot_template("↓1.2M"), "↓0.0M");
         assert_eq!(slot_template("C100%"), "C000%");
+    }
+
+    fn fit_all(slots: &mut SlotWidths, widths: &[f64]) -> Vec<f64> {
+        widths.iter().map(|w| slots.fit(None, *w)).collect()
+    }
+
+    #[test]
+    fn slot_grows_immediately() {
+        let mut slots = SlotWidths::default();
+        assert_eq!(fit_all(&mut slots, &[30.2, 40.0, 52.5]), [31.0, 40.0, 53.0]);
+    }
+
+    #[test]
+    fn slot_shrinks_after_n_narrower_renders() {
+        let mut slots = SlotWidths::default();
+        slots.fit(None, 50.0);
+        let got = fit_all(&mut slots, &[30.0; SHRINK_AFTER as usize]);
+        let mut want = vec![50.0; SHRINK_AFTER as usize - 1];
+        want.push(30.0);
+        assert_eq!(got, want);
+        // Stays shrunk and keeps counting from scratch.
+        assert_eq!(slots.fit(None, 30.0), 30.0);
+    }
+
+    #[test]
+    fn slot_does_not_shrink_when_wider_or_equal_interrupts() {
+        for interrupt in [50.0, 60.0] {
+            let mut slots = SlotWidths::default();
+            slots.fit(None, 50.0);
+            let n = SHRINK_AFTER as usize - 1;
+            fit_all(&mut slots, &vec![30.0; n]);
+            assert_eq!(slots.fit(None, interrupt), interrupt);
+            // The run restarted: n more narrower renders still keep the width.
+            assert_eq!(fit_all(&mut slots, &vec![30.0; n]), vec![interrupt; n]);
+        }
+    }
+
+    #[test]
+    fn slot_shrinks_to_widest_of_the_narrower_run() {
+        let mut slots = SlotWidths::default();
+        slots.fit(None, 60.0);
+        let run = [30.0, 40.0, 30.0, 35.0, 30.0];
+        assert_eq!(*fit_all(&mut slots, &run).last().unwrap(), 40.0);
+    }
+
+    #[test]
+    fn stacks_are_independent_and_reset_clears() {
+        let mut slots = SlotWidths::default();
+        slots.fit(Some(0), 40.0);
+        slots.fit(Some(1), 20.0);
+        for _ in 0..SHRINK_AFTER {
+            slots.fit(Some(0), 10.0);
+        }
+        assert_eq!(slots.fit(Some(0), 10.0), 10.0);
+        assert_eq!(slots.fit(Some(1), 20.0), 20.0);
+        slots.reset();
+        assert_eq!(slots.fit(Some(1), 5.0), 5.0);
     }
 
     #[test]
