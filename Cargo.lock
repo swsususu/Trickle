@@ -6410,7 +6410,7 @@ dependencies = [
 
 [[package]]
 name = "trickle"
-version = "0.0.8"
+version = "0.0.9"
 dependencies = [
  "bincode",
  "block2 0.5.1",
