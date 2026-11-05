@@ -25,6 +25,7 @@ use crate::{
     util::{dict_into, skip_until},
 };
 
+pub mod backlight;
 pub mod remote;
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
@@ -57,6 +58,10 @@ pub struct NormalizedResource {
     pub max_capacity: i32,
     #[serde(default)]
     pub design_capacity: i32,
+    /// True when `brightness_power` is estimated from the backlight drive
+    /// current instead of read from an SMC power rail.
+    #[serde(default)]
+    pub brightness_estimated: bool,
     #[serde(flatten)]
     pub data: NormalizedData,
 }
@@ -141,7 +146,20 @@ impl NormalizedResource {
     pub fn local_from_ioreg(io: &IORegistry) -> Self {
         let mut resource = Self::from(io);
         resource.is_local = true;
+        resource.fill_brightness_estimate();
         resource
+    }
+
+    /// Fall back to the IORegistry backlight estimate when no SMC display
+    /// rail reported a value (e.g. MacBook Air). Local samples only.
+    pub fn fill_brightness_estimate(&mut self) {
+        if self.data.brightness_power > 0.0 {
+            return;
+        }
+        if let Some(watts) = backlight::estimate_power() {
+            self.data.brightness_power = watts;
+            self.brightness_estimated = true;
+        }
     }
 }
 
@@ -207,6 +225,7 @@ impl From<&IORegistry> for NormalizedResource {
             max_capacity: max_cap,
             design_capacity: design_cap,
             current_capacity: cur_cap,
+            brightness_estimated: false,
             data: NormalizedData {
                 system_in,
                 system_load,
@@ -259,6 +278,7 @@ impl From<(&IORegistry, &SMCPowerData)> for NormalizedResource {
             max_capacity: max_cap,
             design_capacity: design_cap,
             current_capacity: cur_cap,
+            brightness_estimated: false,
             data: NormalizedData {
                 system_in: smc.delivery_rate,
                 system_load: smc.system_total,

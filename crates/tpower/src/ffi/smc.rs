@@ -17,8 +17,12 @@ const CMD_READ_BYTES: u8 = 5;
 const CMD_WRITE_BYTES: u8 = 6;
 const CMD_READ_KEYINFO: u8 = 9;
 
-const SMC_SENSORS: [&str; 11] = [
-    "PPBR", "PDTR", "PSTR", "PHPC", "PDBR", "B0FC", "SBAR", "CHCC", "B0TE", "B0TF", "TB0T",
+// `PBwo` is the display backlight rail on M5 / A18 machines, `PDBR` the older
+// one on M1-M4 mini-LED (XDR) panels. Most other Macs expose neither, in which
+// case `provider::backlight` estimates the value from IORegistry instead.
+const SMC_SENSORS: [&str; 12] = [
+    "PPBR", "PDTR", "PSTR", "PHPC", "PDBR", "PBwo", "B0FC", "SBAR", "CHCC", "B0TE", "B0TF",
+    "TB0T",
 ];
 
 pub trait SMCReadSensor {
@@ -27,7 +31,8 @@ pub trait SMCReadSensor {
 
 impl SMCReadSensor for SMCConnection {
     fn read_sensor(&mut self) -> SMCPowerData {
-        SMC_SENSORS
+        let mut backlight = None;
+        let mut data = SMC_SENSORS
             .into_iter()
             .fold(SMCPowerData::default(), |mut acc, key| {
                 if let Ok(Some(val)) = self.read_key(key).map(|v| v.value()) {
@@ -38,6 +43,7 @@ impl SMCReadSensor for SMCConnection {
                         "PSTR" => acc.system_total = val,
                         "PHPC" => acc.heatpipe = val,
                         "PDBR" => acc.brightness = val,
+                        "PBwo" => backlight = Some(val),
                         "B0FC" => acc.full_charge_capacity = val,
                         "SBAR" => acc.current_capacity = val,
                         "CHCC" => acc.charging_status = val,
@@ -48,7 +54,12 @@ impl SMCReadSensor for SMCConnection {
                     }
                 }
                 acc
-            })
+            });
+        // Prefer the newer rail where the hardware has it.
+        if let Some(val) = backlight.filter(|v| v.is_finite() && *v > 0.0) {
+            data.brightness = val;
+        }
+        data
     }
 }
 
@@ -306,6 +317,12 @@ impl SMCConnection {
 
         // First get key info from cache or SMC
         let key_info = self.get_key_info(key_int)?;
+        // Some Apple Silicon SMCs answer KERN_SUCCESS with an empty key info
+        // for keys they do not have. Treat that as a missing key rather than
+        // decoding garbage bytes.
+        if key_info.data_size == 0 || key_info.data_type == 0 {
+            return Err(kern_return::KERN_INVALID_ARGUMENT);
+        }
 
         // Setup input structure
         let input = SMCKeyData {

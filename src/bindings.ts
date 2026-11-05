@@ -205,7 +205,12 @@ adapterDescription?: string | null;
 /**
  * Negotiated USB-C PD power tier.
  */
-adapterPowerTier?: number; adapterIsWireless?: boolean; cycleCount: number; currentCapacity: number; maxCapacity: number; designCapacity?: number }
+adapterPowerTier?: number; adapterIsWireless?: boolean; cycleCount: number; currentCapacity: number; maxCapacity: number; designCapacity?: number; 
+/**
+ * True when `brightness_power` is estimated from the backlight drive
+ * current instead of read from an SMC power rail.
+ */
+brightnessEstimated?: boolean }
 export type PowerTickEvent = { data: NormalizedResource }
 export type PowerUpdatedEvent = TrayLabel
 export type PreferenceEvent = { theme: Theme } | { animationsEnabled: boolean } | { updateInterval: number } | { language: string } | { statusBarItem: StatusBarItem } | { statusBarShowCharging: boolean } | { systemMonitorEnabled: boolean } | { statusBarSystem: StatusBarSystem }

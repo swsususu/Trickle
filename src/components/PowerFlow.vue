@@ -81,8 +81,12 @@ const power = usePower()
 
         <div class="flex flex-col items-center gap-2 bg-muted/50 rounded-lg border p-2">
           <div v-if="!power.isRemote" class="flex gap-4" color="text-blue-500">
-            <FlowItem :tooltip="$t('flow.screen_power')" :icon="Monitor" color="text-blue-500">
-              {{ formatter.format(power.brightnessPower || 0) }}
+            <FlowItem
+              :tooltip="power.brightnessEstimated ? $t('flow.screen_power_estimated') : $t('flow.screen_power')"
+              :icon="Monitor"
+              color="text-blue-500"
+            >
+              {{ power.brightnessEstimated ? '~' : '' }}{{ formatter.format(power.brightnessPower || 0) }}
             </FlowItem>
 
             <FlowItem :tooltip="$t('flow.heatpipe_power')" :icon="Cpu" color="text-indigo-500">

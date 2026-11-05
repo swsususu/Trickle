@@ -30,6 +30,7 @@ status:
 
 flow:
   screen_power: Screen Power
+  screen_power_estimated: Screen Power (estimated from backlight current)
   heatpipe_power: SoC Power
   system_total: System Total
   system_in: System In

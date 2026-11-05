@@ -171,7 +171,11 @@ fn emit_power_sample<R: Runtime>(
         Ok(ioreg) => {
             let data = smc.as_ref().map_or_else(
                 || NormalizedResource::local_from_ioreg(&ioreg),
-                |smc| NormalizedResource::from((&ioreg, smc)),
+                |smc| {
+                    let mut data = NormalizedResource::from((&ioreg, smc));
+                    data.fill_brightness_estimate();
+                    data
+                },
             );
             let bar = if data.is_charging && show_charging {
                 data.adapter_power

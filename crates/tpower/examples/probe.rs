@@ -43,7 +43,8 @@ fn main() {
     println!("\n=== SMC ===");
     println!("{smc_data:#?}");
 
-    let n = NormalizedResource::from((&io, &smc_data));
+    let mut n = NormalizedResource::from((&io, &smc_data));
+    n.fill_brightness_estimate();
     println!("\n=== normalized (what the UI shows) ===");
     println!("is_charging          = {}", n.is_charging);
     println!("time_remain          = {:?}", n.time_remain);
@@ -72,7 +73,11 @@ fn main() {
     println!("system_in            = {:.2} W", n.data.system_in);
     println!("system_load          = {:.2} W", n.data.system_load);
     println!("battery_power        = {:.2} W", n.data.battery_power);
-    println!("brightness_power     = {:.2} W", n.data.brightness_power);
+    println!("brightness_power     = {:.2} W (estimated: {})", n.data.brightness_power, n.brightness_estimated);
+    println!(
+        "backlight estimate   = {:?} W (AppleARMBacklight)",
+        tpower::provider::backlight::estimate_power()
+    );
     println!("heatpipe_power       = {:.2} W", n.data.heatpipe_power);
     println!("adapter_power        = {:.2} W", n.data.adapter_power);
     println!("data.adapter_watts   = {:.2} W  (AdapterDetails.Watts = rating)", n.data.adapter_watts);
