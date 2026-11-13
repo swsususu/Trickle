@@ -11,6 +11,8 @@ interface FlowItemProps {
   tooltip: string
   icon: Component
   color: string
+  /** Show the `w` suffix; off when the value is not a number (N/A). */
+  unit?: boolean
 }
 
 const colorMap = {
@@ -20,7 +22,7 @@ const colorMap = {
   'text-indigo-500': 'text-indigo-950 dark:text-indigo-50 hover:bg-indigo-500/5 hover:border-indigo-500/20',
 }
 
-const FlowItem: Component = ({ tooltip, icon, color }: FlowItemProps, { slots }) => {
+const FlowItem: Component = ({ tooltip, icon, color, unit = true }: FlowItemProps, { slots }) => {
   return (
     <CommonTooltip content={tooltip} as-child>
       <div
@@ -32,7 +34,7 @@ const FlowItem: Component = ({ tooltip, icon, color }: FlowItemProps, { slots })
         { h(icon, { class: `h-4 w-4 ${color}` }) }
         <span class="text-xs font-medium">
           { slots.default?.() }
-          <span class="ml-[1px]">w</span>
+          { unit && <span class="ml-[1px]">w</span> }
         </span>
       </div>
     </CommonTooltip>
@@ -82,11 +84,12 @@ const power = usePower()
         <div class="flex flex-col items-center gap-2 bg-muted/50 rounded-lg border p-2">
           <div v-if="!power.isRemote" class="flex gap-4" color="text-blue-500">
             <FlowItem
-              :tooltip="power.brightnessEstimated ? $t('flow.screen_power_estimated') : $t('flow.screen_power')"
+              :tooltip="power.brightnessAvailable ? $t('flow.screen_power') : $t('flow.screen_power_unavailable')"
               :icon="Monitor"
               color="text-blue-500"
+              :unit="power.brightnessAvailable"
             >
-              {{ power.brightnessEstimated ? '~' : '' }}{{ formatter.format(power.brightnessPower || 0) }}
+              {{ power.brightnessAvailable ? formatter.format(power.brightnessPower || 0) : 'N/A' }}
             </FlowItem>
 
             <FlowItem :tooltip="$t('flow.heatpipe_power')" :icon="Cpu" color="text-indigo-500">

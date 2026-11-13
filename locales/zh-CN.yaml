@@ -28,7 +28,7 @@ status:
   system_other: 其他
 flow:
   screen_power: 屏幕功耗
-  screen_power_estimated: 屏幕功耗（根据背光电流估算）
+  screen_power_unavailable: 屏幕功耗（此 Mac 不提供）
   heatpipe_power: SoC功耗
   system_total: 系统总功耗
   system_in: 系统总输入

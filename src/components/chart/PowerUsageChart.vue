@@ -8,7 +8,9 @@ const power = usePower()
 const categories = computed(() => {
   const base = ['System Power'] as (keyof StatisticData)[]
   if (!power.value.isRemote) {
-    base.push('Screen Power', 'Heatpipe Power')
+    if (power.value.brightnessAvailable)
+      base.push('Screen Power')
+    base.push('Heatpipe Power')
   }
   if (power.value.isCharging) {
     base.push('System In')
@@ -46,7 +48,7 @@ const localedCategories = computed(() => categories.value.map(item => localeMap.
 
 // needs to force update chart when categories change, a bug of chart
 const loading = ref(false)
-watch([localeMap, () => power.value.isCharging], async () => {
+watch([localeMap, () => power.value.isCharging, () => power.value.brightnessAvailable], async () => {
   loading.value = true
   await nextTick()
   loading.value = false

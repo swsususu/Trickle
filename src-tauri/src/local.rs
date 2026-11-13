@@ -13,7 +13,7 @@ use tokio::{
 };
 use tpower::{
     ffi::smc::{SMCConnection, SMCPowerData, SMCReadSensor},
-    provider::{get_mac_ioreg, NormalizedResource},
+    provider::{get_mac_ioreg, BrightnessSensor, NormalizedResource},
 };
 
 use crate::{
@@ -59,32 +59,41 @@ fn make_interval(period: Duration) -> time::Interval {
     timer
 }
 
+/// The tray reading, or `None` when the chosen item has no working sensor on
+/// this Mac (screen power on a MacBook Air).
 pub fn status_bar_text(
     smc: &SMCPowerData,
     status_bar_item: &StatusBarItem,
     show_charging: bool,
-) -> f32 {
+    screen_available: bool,
+) -> Option<f32> {
     if smc.is_charging() && show_charging {
-        return smc.delivery_rate;
+        return Some(smc.delivery_rate);
     }
     match status_bar_item {
-        StatusBarItem::System => smc.system_total,
-        StatusBarItem::Screen => smc.brightness,
-        StatusBarItem::Heatpipe => smc.heatpipe,
+        StatusBarItem::System => Some(smc.system_total),
+        StatusBarItem::Screen => screen_available.then_some(smc.brightness),
+        StatusBarItem::Heatpipe => Some(smc.heatpipe),
     }
 }
 
 impl PowerUpdatedEvent {
-    pub fn new(value: f32) -> Self {
-        Self(TrayLabel::power(value))
+    pub fn new(value: Option<f32>) -> Self {
+        Self(value.map_or_else(TrayLabel::unavailable, TrayLabel::power))
     }
 
     pub fn new_with(
         smc: &SMCPowerData,
         status_bar_item: &StatusBarItem,
         show_charging: bool,
+        screen_available: bool,
     ) -> Self {
-        Self::new(status_bar_text(smc, status_bar_item, show_charging))
+        Self::new(status_bar_text(
+            smc,
+            status_bar_item,
+            show_charging,
+            screen_available,
+        ))
     }
 }
 
@@ -143,6 +152,7 @@ fn emit_power_sample<R: Runtime>(
     status_bar_item: &StatusBarItem,
     show_charging: bool,
     system: &mut SystemMonitor,
+    screen: &mut BrightnessSensor,
 ) {
     // Sampled first so the status bar title below can include it.
     let stats = system.sample();
@@ -169,21 +179,20 @@ fn emit_power_sample<R: Runtime>(
     let smc = smc_conn.as_mut().map(SMCReadSensor::read_sensor);
     match get_mac_ioreg() {
         Ok(ioreg) => {
-            let data = smc.as_ref().map_or_else(
+            let mut data = smc.as_ref().map_or_else(
                 || NormalizedResource::local_from_ioreg(&ioreg),
-                |smc| {
-                    let mut data = NormalizedResource::from((&ioreg, smc));
-                    data.fill_brightness_estimate();
-                    data
-                },
+                |smc| NormalizedResource::from((&ioreg, smc)),
             );
+            screen.apply(&mut data);
             let bar = if data.is_charging && show_charging {
-                data.adapter_power
+                Some(data.adapter_power)
             } else {
                 match status_bar_item {
-                    StatusBarItem::System => data.system_load,
-                    StatusBarItem::Screen => data.brightness_power,
-                    StatusBarItem::Heatpipe => data.heatpipe_power,
+                    StatusBarItem::System => Some(data.system_load),
+                    StatusBarItem::Screen => data
+                        .brightness_available
+                        .then_some(data.brightness_power),
+                    StatusBarItem::Heatpipe => Some(data.heatpipe_power),
                 }
             };
             if let Err(error) = title(PowerUpdatedEvent::new(bar)).emit(app) {
@@ -219,6 +228,7 @@ fn emit_power_sample<R: Runtime>(
                     &smc,
                     status_bar_item,
                     show_charging,
+                    screen.available(),
                 ))
                 .emit(app)
                 {
@@ -242,6 +252,7 @@ pub fn start_sender<R: Runtime>(
         }
     };
     let mut next_smc_retry = Instant::now() + Duration::from_secs(30);
+    let mut screen = BrightnessSensor::default();
 
     let mut timer = make_interval(sanitize_interval_ms(
         app.pinia()
@@ -276,6 +287,7 @@ pub fn start_sender<R: Runtime>(
                         &status_bar_item,
                         show_charging,
                         &mut system,
+                        &mut screen,
                     );
                 }
                 Some(msg) = rx.recv() => match msg {
@@ -287,6 +299,7 @@ pub fn start_sender<R: Runtime>(
                             &status_bar_item,
                             show_charging,
                             &mut system,
+                            &mut screen,
                         );
                     },
                     SenderMessage::ChangeInterval(interval) => {
@@ -303,6 +316,7 @@ pub fn start_sender<R: Runtime>(
                             &status_bar_item,
                             show_charging,
                             &mut system,
+                            &mut screen,
                         );
                     },
                     SenderMessage::StatusBarShowCharging(show) => {
@@ -314,6 +328,7 @@ pub fn start_sender<R: Runtime>(
                             &status_bar_item,
                             show_charging,
                             &mut system,
+                            &mut screen,
                         );
                     }
                     SenderMessage::SystemMonitorEnabled(enabled) => {
@@ -390,7 +405,29 @@ mod tests {
             system_total: 12.0,
             ..Default::default()
         };
-        assert_eq!(status_bar_text(&smc, &StatusBarItem::System, true), 31.5);
-        assert_eq!(status_bar_text(&smc, &StatusBarItem::System, false), 12.0);
+        assert_eq!(
+            status_bar_text(&smc, &StatusBarItem::System, true, true),
+            Some(31.5)
+        );
+        assert_eq!(
+            status_bar_text(&smc, &StatusBarItem::System, false, true),
+            Some(12.0)
+        );
+    }
+
+    #[test]
+    fn tray_screen_power_is_unavailable_without_sensor() {
+        let smc = SMCPowerData {
+            brightness: 0.0,
+            ..Default::default()
+        };
+        assert_eq!(
+            status_bar_text(&smc, &StatusBarItem::Screen, true, false),
+            None
+        );
+        assert_eq!(
+            status_bar_text(&smc, &StatusBarItem::Screen, true, true),
+            Some(0.0)
+        );
     }
 }

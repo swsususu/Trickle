@@ -5,7 +5,7 @@
 
 use tpower::{
     ffi::smc::{SMCConnection, SMCReadSensor},
-    provider::{get_mac_ioreg, NormalizedResource},
+    provider::{get_mac_ioreg, BrightnessSensor, NormalizedResource},
 };
 
 fn main() {
@@ -44,7 +44,7 @@ fn main() {
     println!("{smc_data:#?}");
 
     let mut n = NormalizedResource::from((&io, &smc_data));
-    n.fill_brightness_estimate();
+    BrightnessSensor::default().apply(&mut n);
     println!("\n=== normalized (what the UI shows) ===");
     println!("is_charging          = {}", n.is_charging);
     println!("time_remain          = {:?}", n.time_remain);
@@ -73,10 +73,9 @@ fn main() {
     println!("system_in            = {:.2} W", n.data.system_in);
     println!("system_load          = {:.2} W", n.data.system_load);
     println!("battery_power        = {:.2} W", n.data.battery_power);
-    println!("brightness_power     = {:.2} W (estimated: {})", n.data.brightness_power, n.brightness_estimated);
     println!(
-        "backlight estimate   = {:?} W (AppleARMBacklight)",
-        tpower::provider::backlight::estimate_power()
+        "brightness_power     = {:.2} W (sensor available: {})",
+        n.data.brightness_power, n.brightness_available
     );
     println!("heatpipe_power       = {:.2} W", n.data.heatpipe_power);
     println!("adapter_power        = {:.2} W", n.data.adapter_power);

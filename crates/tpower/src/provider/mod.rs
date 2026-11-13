@@ -25,7 +25,6 @@ use crate::{
     util::{dict_into, skip_until},
 };
 
-pub mod backlight;
 pub mod remote;
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
@@ -58,10 +57,11 @@ pub struct NormalizedResource {
     pub max_capacity: i32,
     #[serde(default)]
     pub design_capacity: i32,
-    /// True when `brightness_power` is estimated from the backlight drive
-    /// current instead of read from an SMC power rail.
+    /// True once this Mac's SMC has reported a working screen power sensor.
+    /// False means `brightness_power` is unknown, not 0 W: MacBook Airs list
+    /// a screen key that reads 0 at any brightness. Local samples only.
     #[serde(default)]
-    pub brightness_estimated: bool,
+    pub brightness_available: bool,
     #[serde(flatten)]
     pub data: NormalizedData,
 }
@@ -146,19 +146,34 @@ impl NormalizedResource {
     pub fn local_from_ioreg(io: &IORegistry) -> Self {
         let mut resource = Self::from(io);
         resource.is_local = true;
-        resource.fill_brightness_estimate();
         resource
     }
+}
 
-    /// Fall back to the IORegistry backlight estimate when no SMC display
-    /// rail reported a value (e.g. MacBook Air). Local samples only.
-    pub fn fill_brightness_estimate(&mut self) {
-        if self.data.brightness_power > 0.0 {
-            return;
-        }
-        if let Some(watts) = backlight::estimate_power() {
-            self.data.brightness_power = watts;
-            self.brightness_estimated = true;
+/// A screen power reading at or above this proves the sensor works. A Mac
+/// without one can still list the key and read 0 (M1/M2 Air) or 0.01 W (M4
+/// Air, even under load); the quietest working sensor known reads 0.3 W at one
+/// bar of brightness (base M4 MacBook Pro).
+pub const BRIGHTNESS_SENSOR_MIN_W: f32 = 0.1;
+
+/// Remembers whether the screen power sensor has ever worked, so a dark or
+/// closed screen reading 0 W later does not hide it again.
+#[derive(Debug, Default)]
+pub struct BrightnessSensor {
+    seen: bool,
+}
+
+impl BrightnessSensor {
+    /// Whether a working screen power sensor has been seen yet.
+    pub fn available(&self) -> bool {
+        self.seen
+    }
+
+    pub fn apply(&mut self, resource: &mut NormalizedResource) {
+        self.seen |= resource.data.brightness_power >= BRIGHTNESS_SENSOR_MIN_W;
+        resource.brightness_available = self.seen;
+        if !self.seen {
+            resource.data.brightness_power = 0.0;
         }
     }
 }
@@ -225,7 +240,7 @@ impl From<&IORegistry> for NormalizedResource {
             max_capacity: max_cap,
             design_capacity: design_cap,
             current_capacity: cur_cap,
-            brightness_estimated: false,
+            brightness_available: false,
             data: NormalizedData {
                 system_in,
                 system_load,
@@ -278,7 +293,7 @@ impl From<(&IORegistry, &SMCPowerData)> for NormalizedResource {
             max_capacity: max_cap,
             design_capacity: design_cap,
             current_capacity: cur_cap,
-            brightness_estimated: false,
+            brightness_available: false,
             data: NormalizedData {
                 system_in: smc.delivery_rate,
                 system_load: smc.system_total,
@@ -490,6 +505,39 @@ mod tests {
             ..Default::default()
         };
         assert!(is_charging_local(&io, &smc));
+    }
+
+    fn with_screen(watts: f32) -> NormalizedResource {
+        let mut r = NormalizedResource::default();
+        r.data.brightness_power = watts;
+        r
+    }
+
+    #[test]
+    fn dead_screen_sensor_is_unavailable() {
+        // MacBook Air: PBLR listed but stuck at 0 / 0.01 W.
+        let mut sensor = BrightnessSensor::default();
+        for watts in [0.0, 0.01, 0.0] {
+            let mut r = with_screen(watts);
+            sensor.apply(&mut r);
+            assert!(!r.brightness_available);
+            assert_eq!(r.data.brightness_power, 0.0);
+        }
+    }
+
+    #[test]
+    fn working_screen_sensor_stays_available_when_dark() {
+        let mut sensor = BrightnessSensor::default();
+        let mut r = with_screen(0.3);
+        sensor.apply(&mut r);
+        assert!(r.brightness_available);
+        assert_eq!(r.data.brightness_power, 0.3);
+
+        // Lid closed / screen off afterwards: still a real 0 W.
+        let mut r = with_screen(0.0);
+        sensor.apply(&mut r);
+        assert!(r.brightness_available);
+        assert_eq!(r.data.brightness_power, 0.0);
     }
 
     #[test]

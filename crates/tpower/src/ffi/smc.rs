@@ -17,13 +17,27 @@ const CMD_READ_BYTES: u8 = 5;
 const CMD_WRITE_BYTES: u8 = 6;
 const CMD_READ_KEYINFO: u8 = 9;
 
-// `PBwo` is the display backlight rail on M5 / A18 machines, `PDBR` the older
-// one on M1-M4 mini-LED (XDR) panels. Most other Macs expose neither, in which
-// case `provider::backlight` estimates the value from IORegistry instead.
-const SMC_SENSORS: [&str; 12] = [
-    "PPBR", "PDTR", "PSTR", "PHPC", "PDBR", "PBwo", "B0FC", "SBAR", "CHCC", "B0TE", "B0TF",
-    "TB0T",
+// Display backlight power. The key follows the chip tier: `PDBR` on Pro/Max
+// chips (M1-M5), `PBLR` on base chips, `PBwo` on the A18 Pro MacBook Neo.
+// MacBook Airs list `PBLR` but it reads 0 at any brightness, so a listed key is
+// not proof of a sensor; see `provider::BRIGHTNESS_SENSOR_MIN_W`.
+const SCREEN_POWER_KEYS: [&str; 3] = ["PDBR", "PBLR", "PBwo"];
+/// Above this it is not a built-in screen (the highest measured is ~11 W).
+const SCREEN_MAX_W: f32 = 25.0;
+
+const SMC_SENSORS: [&str; 13] = [
+    "PPBR", "PDTR", "PSTR", "PHPC", "PDBR", "PBLR", "PBwo", "B0FC", "SBAR", "CHCC", "B0TE",
+    "B0TF", "TB0T",
 ];
+
+/// The first screen key with a reading a screen could give, else 0.
+fn screen_power(readings: &[(&str, f32)]) -> f32 {
+    SCREEN_POWER_KEYS
+        .iter()
+        .filter_map(|key| readings.iter().find(|(k, _)| k == key).map(|(_, v)| *v))
+        .find(|v| v.is_finite() && *v > 0.0 && *v <= SCREEN_MAX_W)
+        .unwrap_or(0.0)
+}
 
 pub trait SMCReadSensor {
     fn read_sensor(&mut self) -> SMCPowerData;
@@ -31,7 +45,7 @@ pub trait SMCReadSensor {
 
 impl SMCReadSensor for SMCConnection {
     fn read_sensor(&mut self) -> SMCPowerData {
-        let mut backlight = None;
+        let mut screen = Vec::with_capacity(SCREEN_POWER_KEYS.len());
         let mut data = SMC_SENSORS
             .into_iter()
             .fold(SMCPowerData::default(), |mut acc, key| {
@@ -42,8 +56,7 @@ impl SMCReadSensor for SMCConnection {
                         // System Total Power Consumed (Delayed 1 Second)
                         "PSTR" => acc.system_total = val,
                         "PHPC" => acc.heatpipe = val,
-                        "PDBR" => acc.brightness = val,
-                        "PBwo" => backlight = Some(val),
+                        "PDBR" | "PBLR" | "PBwo" => screen.push((key, val)),
                         "B0FC" => acc.full_charge_capacity = val,
                         "SBAR" => acc.current_capacity = val,
                         "CHCC" => acc.charging_status = val,
@@ -55,10 +68,7 @@ impl SMCReadSensor for SMCConnection {
                 }
                 acc
             });
-        // Prefer the newer rail where the hardware has it.
-        if let Some(val) = backlight.filter(|v| v.is_finite() && *v > 0.0) {
-            data.brightness = val;
-        }
+        data.brightness = screen_power(&screen);
         data
     }
 }
@@ -439,4 +449,24 @@ fn u32_to_bytes(val: u32) -> [u8; 4] {
         (val >> 8) as u8,
         val as u8,
     ]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn screen_power_prefers_first_believable_key() {
+        assert_eq!(screen_power(&[("PDBR", 2.5), ("PBLR", 1.0)]), 2.5);
+        // PBLR listed but dead (MacBook Air), PBwo working.
+        assert_eq!(screen_power(&[("PBLR", 0.0), ("PBwo", 1.4)]), 1.4);
+    }
+
+    #[test]
+    fn screen_power_rejects_missing_and_implausible() {
+        assert_eq!(screen_power(&[]), 0.0);
+        assert_eq!(screen_power(&[("PBLR", 0.0)]), 0.0);
+        assert_eq!(screen_power(&[("PDBR", 300.0)]), 0.0);
+        assert_eq!(screen_power(&[("PDBR", f32::NAN)]), 0.0);
+    }
 }

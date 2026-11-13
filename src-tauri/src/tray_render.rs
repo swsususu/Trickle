@@ -48,6 +48,14 @@ impl TrayLabel {
         }
     }
 
+    /// Shown when the selected reading has no sensor on this Mac.
+    pub fn unavailable() -> Self {
+        Self {
+            primary: "N/A".into(),
+            stacks: Vec::new(),
+        }
+    }
+
     /// Single-line fallback, used for the accessibility title.
     pub fn plain(&self) -> String {
         let mut out = self.primary.clone();

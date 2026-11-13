@@ -45,9 +45,12 @@ const handle = watchEffect(() => {
   }
 
   if (!power.value.isRemote) {
-    parts.screen = power.value.brightnessPower
+    // Without a screen sensor (MacBook Air) a 0 W segment would claim the
+    // screen draws nothing; leave it out so its power stays in "other".
+    if (power.value.brightnessAvailable)
+      parts.screen = power.value.brightnessPower
     parts.heatpipe = power.value.heatpipePower
-    parts.systemOther = parts.systemTotal - parts.screen - parts.heatpipe
+    parts.systemOther = parts.systemTotal - (parts.screen ?? 0) - parts.heatpipe
     delete parts.systemTotal
   }
 

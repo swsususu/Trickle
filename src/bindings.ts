@@ -207,10 +207,11 @@ adapterDescription?: string | null;
  */
 adapterPowerTier?: number; adapterIsWireless?: boolean; cycleCount: number; currentCapacity: number; maxCapacity: number; designCapacity?: number; 
 /**
- * True when `brightness_power` is estimated from the backlight drive
- * current instead of read from an SMC power rail.
+ * True once this Mac's SMC has reported a working screen power sensor.
+ * False means `brightness_power` is unknown, not 0 W: MacBook Airs list
+ * a screen key that reads 0 at any brightness. Local samples only.
  */
-brightnessEstimated?: boolean }
+brightnessAvailable?: boolean }
 export type PowerTickEvent = { data: NormalizedResource }
 export type PowerUpdatedEvent = TrayLabel
 export type PreferenceEvent = { theme: Theme } | { animationsEnabled: boolean } | { updateInterval: number } | { language: string } | { statusBarItem: StatusBarItem } | { statusBarShowCharging: boolean } | { systemMonitorEnabled: boolean } | { statusBarSystem: StatusBarSystem }
